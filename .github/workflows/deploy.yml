@@ -37,9 +37,9 @@ jobs:
         cat > .env << 'EOL'
         APP_NAME=Laravel
         APP_ENV=testing
-        APP_KEY=
+        APP_KEY=base64:PZyo6EHC+JXfokKj6g4smB/fF91qVHfGv6flBCAdwAk=
         APP_DEBUG=true
-        APP_URL=http://localhost
+        APP_URL=http://api2.smallsmall.com
         
         LOG_CHANNEL=stack
         
