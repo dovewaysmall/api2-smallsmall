@@ -91,25 +91,8 @@ jobs:
     - name: Install Dependencies
       run: composer install --optimize-autoloader --no-dev
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '16'
-
-    - name: Install NPM dependencies
-      run: npm install
-
-    - name: Build assets
-      run: |
-        if npm run | grep -q "build"; then
-          npm run build
-        elif npm run | grep -q "production"; then
-          npm run production
-        elif npm run | grep -q "prod"; then
-          npm run prod
-        else
-          echo "No build script found, skipping asset compilation"
-        fi
+    - name: Skip frontend build for API-only project
+      run: echo "Skipping frontend asset compilation for API-only Laravel project"
 
     - name: Create deployment package
       run: |
