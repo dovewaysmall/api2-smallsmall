@@ -46,8 +46,8 @@ class BookingController extends Controller
         $currentYear = date('Y');
         
         $subscriptionsDue = DB::table('bookings')
-            ->join('user_tbl', 'bookings.userID', '=', 'user_tbl.userID')
-            ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+            ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+            ->join('property_tbl', DB::raw('CAST(bookings.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
             ->select(
                 'bookings.*',
                 'user_tbl.firstName',
@@ -55,9 +55,9 @@ class BookingController extends Controller
                 'user_tbl.email',
                 'user_tbl.phone',
                 'property_tbl.propertyTitle',
-                'property_tbl.propertyAddress',
+                'property_tbl.address',
                 'property_tbl.propertyType',
-                'property_tbl.rent_amount'
+                'property_tbl.price'
             )
             ->whereRaw('MONTH(bookings.next_rental) = ?', [$currentMonth])
             ->whereRaw('YEAR(bookings.next_rental) = ?', [$currentYear])
@@ -78,7 +78,7 @@ class BookingController extends Controller
         }
 
         // Calculate total amount due
-        $totalAmountDue = $subscriptionsDue->sum('rent_amount');
+        $totalAmountDue = $subscriptionsDue->sum('price');
 
         return response()->json([
             'success' => true,
@@ -99,8 +99,8 @@ class BookingController extends Controller
         $twoWeeksFromNow = date('Y-m-d', strtotime('+2 weeks'));
         
         $subscriptionsDue = DB::table('bookings')
-            ->join('user_tbl', 'bookings.userID', '=', 'user_tbl.userID')
-            ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+            ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+            ->join('property_tbl', DB::raw('CAST(bookings.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
             ->select(
                 'bookings.*',
                 'user_tbl.firstName',
@@ -108,9 +108,9 @@ class BookingController extends Controller
                 'user_tbl.email',
                 'user_tbl.phone',
                 'property_tbl.propertyTitle',
-                'property_tbl.propertyAddress',
+                'property_tbl.address',
                 'property_tbl.propertyType',
-                'property_tbl.rent_amount'
+                'property_tbl.price'
             )
             ->whereDate('bookings.next_rental', '>=', $today)
             ->whereDate('bookings.next_rental', '<=', $twoWeeksFromNow)
@@ -173,8 +173,8 @@ class BookingController extends Controller
         $currentYear = date('Y');
         
         $subscription = DB::table('bookings')
-            ->join('user_tbl', 'bookings.userID', '=', 'user_tbl.userID')
-            ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+            ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+            ->join('property_tbl', DB::raw('CAST(bookings.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
             ->select(
                 'bookings.*',
                 'user_tbl.firstName',
@@ -182,9 +182,9 @@ class BookingController extends Controller
                 'user_tbl.email',
                 'user_tbl.phone',
                 'property_tbl.propertyTitle',
-                'property_tbl.propertyAddress',
+                'property_tbl.address',
                 'property_tbl.propertyType',
-                'property_tbl.rent_amount'
+                'property_tbl.price'
             )
             ->where('bookings.id', $id)
             ->first();
