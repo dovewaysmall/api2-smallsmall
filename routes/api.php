@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\BookingController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -19,6 +20,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/cx-users', [AdminController::class, 'getCXUsers']);
     Route::get('/cx-users/{id}', [AdminController::class, 'getCXUser']);
+    
+    Route::get('/bookings', [BookingController::class, 'index']);
+    Route::get('/bookings/user/{userID}', [BookingController::class, 'getUserBookings']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
 });
