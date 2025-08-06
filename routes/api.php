@@ -22,7 +22,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cx-users/{id}', [AdminController::class, 'getCXUser']);
     
     Route::get('/bookings', [BookingController::class, 'index']);
+    Route::get('/bookings/count', [BookingController::class, 'count']);
     Route::get('/bookings/user/{userID}', [BookingController::class, 'getUserBookings']);
+    
+    Route::get('/subscriptions/due-this-month', [BookingController::class, 'getSubscriptionsDueThisMonth']);
+    Route::get('/subscriptions/due-in-two-weeks', [BookingController::class, 'getSubscriptionsDueInTwoWeeks']);
+    Route::get('/subscriptions/{id}', [BookingController::class, 'getSubscriptionDueById']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
 });
