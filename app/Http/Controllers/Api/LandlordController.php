@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class LandlordController extends Controller
 {
@@ -26,7 +25,6 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'profile_image',
                     'address',
                     'state',
                     'country',
@@ -110,7 +108,6 @@ class LandlordController extends Controller
             'address' => 'nullable|string|max:500',
             'state' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
-            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -122,14 +119,6 @@ class LandlordController extends Controller
         }
 
         try {
-            // Handle image upload
-            $profileImagePath = null;
-            if ($request->hasFile('profile_image')) {
-                $image = $request->file('profile_image');
-                $imageName = time() . '.' . $image->getClientOriginalExtension();
-                $profileImagePath = $image->storeAs('landlord_images', $imageName, 'public');
-            }
-
             // Prepare data for insertion
             $data = [
                 'firstName' => $request->firstName,
@@ -141,7 +130,6 @@ class LandlordController extends Controller
                 'address' => $request->address,
                 'state' => $request->state,
                 'country' => $request->country,
-                'profile_image' => $profileImagePath,
                 'verified' => 0,
                 'date_created' => now(),
             ];
@@ -154,7 +142,7 @@ class LandlordController extends Controller
                 $createdLandlord = DB::table('user_tbl')
                     ->where('userID', $landlordId)
                     ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type', 
-                             'profile_image', 'address', 'state', 'country', 'verified', 'date_created')
+                             'address', 'state', 'country', 'verified', 'date_created')
                     ->first();
 
                 return response()->json([
@@ -205,7 +193,6 @@ class LandlordController extends Controller
             'state' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'verified' => 'sometimes|boolean',
-            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -222,24 +209,13 @@ class LandlordController extends Controller
                 'address', 'state', 'country', 'verified'
             ]);
 
-            // Handle image upload
-            if ($request->hasFile('profile_image')) {
-                // Delete old image if exists
-                if ($landlord->profile_image) {
-                    Storage::disk('public')->delete($landlord->profile_image);
-                }
-
-                $image = $request->file('profile_image');
-                $imageName = time() . '.' . $image->getClientOriginalExtension();
-                $updateData['profile_image'] = $image->storeAs('landlord_images', $imageName, 'public');
-            }
 
             DB::table('user_tbl')->where('userID', $id)->update($updateData);
             
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'profile_image', 'address', 'state', 'country', 'verified', 'date_created')
+                         'address', 'state', 'country', 'verified', 'date_created')
                 ->first();
 
             return response()->json([
@@ -275,10 +251,6 @@ class LandlordController extends Controller
         }
 
         try {
-            // Delete profile image if exists
-            if ($landlord->profile_image) {
-                Storage::disk('public')->delete($landlord->profile_image);
-            }
 
             DB::table('user_tbl')->where('userID', $id)->delete();
 
@@ -345,7 +317,7 @@ class LandlordController extends Controller
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
                 ->where('verified', 1)
-                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'profile_image', 
+                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 
                          'address', 'state', 'country', 'date_created')
                 ->orderBy('date_created', 'desc')
                 ->get();
@@ -376,7 +348,7 @@ class LandlordController extends Controller
                 ->where('user_type', 'landlord')
                 ->where('state', $state)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'profile_image', 'address', 'state', 'country', 'date_created')
+                         'address', 'state', 'country', 'date_created')
                 ->orderBy('date_created', 'desc')
                 ->get();
 
@@ -424,7 +396,7 @@ class LandlordController extends Controller
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'profile_image', 'address', 'state', 'country', 'date_created')
+                         'address', 'state', 'country', 'date_created')
                 ->orderBy('date_created', 'desc')
                 ->get();
 
