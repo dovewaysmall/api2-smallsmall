@@ -24,11 +24,9 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type',
-                    'date_created',
-                    'last_login'
+                    'user_type'
                 )
-                ->orderBy('date_created', 'desc')
+                ->orderBy('userID', 'desc')
                 ->get();
 
             return response()->json([
@@ -122,7 +120,6 @@ class LandlordController extends Controller
                 'password' => bcrypt($request->password),
                 'user_type' => 'landlord',
                 'verified' => 0,
-                'date_created' => now(),
             ];
 
             // Insert landlord and get ID
@@ -133,7 +130,7 @@ class LandlordController extends Controller
                 $createdLandlord = DB::table('user_tbl')
                     ->where('userID', $landlordId)
                     ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type', 
-                             'verified', 'date_created')
+                             'verified')
                     ->first();
 
                 return response()->json([
@@ -203,7 +200,7 @@ class LandlordController extends Controller
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'verified', 'date_created')
+                         'verified')
                 ->first();
 
             return response()->json([
@@ -275,7 +272,7 @@ class LandlordController extends Controller
             // Recent landlords (last 30 days)
             $recentCount = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
-                ->where('date_created', '>=', now()->subDays(30))
+                ->where('userID', '>', 0)
                 ->count();
 
             return response()->json([
@@ -306,8 +303,8 @@ class LandlordController extends Controller
                 ->where('user_type', 'landlord')
                 ->where('verified', 1)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 
-                         'date_created')
-                ->orderBy('date_created', 'desc')
+                         'userID')
+                ->orderBy('userID', 'desc')
                 ->get();
 
             return response()->json([
@@ -354,8 +351,8 @@ class LandlordController extends Controller
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'date_created')
-                ->orderBy('date_created', 'desc')
+                         'userID')
+                ->orderBy('userID', 'desc')
                 ->get();
 
             return response()->json([
@@ -390,7 +387,7 @@ class LandlordController extends Controller
 
             $recentLandlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
-                ->where('date_created', '>=', now()->subDays(30))
+                ->where('userID', '>', 0)
                 ->count();
 
             // Properties owned by landlords
@@ -408,7 +405,7 @@ class LandlordController extends Controller
                 'total_landlords' => $totalLandlords,
                 'verified_landlords' => $verifiedLandlords,
                 'verification_rate' => $totalLandlords > 0 ? round(($verifiedLandlords / $totalLandlords) * 100, 2) : 0,
-                'recent_landlords_30_days' => $recentLandlords,
+                'total_landlords_count' => $recentLandlords,
                 'total_properties_owned' => $totalProperties
             ]);
 
