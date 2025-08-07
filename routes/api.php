@@ -13,6 +13,12 @@ use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\LandlordController;
 use App\Http\Controllers\Api\PayoutController;
 use App\Http\Controllers\Api\PropertyController;
+use App\Http\Controllers\Api\RepairController;
+use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\TenantController;
+use App\Http\Controllers\Api\AccountManagerController;
+use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\VerificationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -105,6 +111,80 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties/{id}', [PropertyController::class, 'show']);
     Route::put('/properties/{id}', [PropertyController::class, 'update']);
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
+    
+    Route::get('/repairs', [RepairController::class, 'index']);
+    Route::post('/repairs', [RepairController::class, 'store']);
+    Route::get('/repairs/stats', [RepairController::class, 'getStats']);
+    Route::get('/repairs/status/{status}', [RepairController::class, 'getByStatus']);
+    Route::get('/repairs/type/{type}', [RepairController::class, 'getByType']);
+    Route::get('/repairs/priority/{priority}', [RepairController::class, 'getByPriority']);
+    Route::get('/repairs/user/{userId}', [RepairController::class, 'getByUser']);
+    Route::get('/repairs/date-range', [RepairController::class, 'getByDateRange']);
+    Route::get('/repairs/{id}', [RepairController::class, 'show']);
+    Route::put('/repairs/{id}', [RepairController::class, 'update']);
+    Route::delete('/repairs/{id}', [RepairController::class, 'destroy']);
+    
+    Route::get('/staff', [StaffController::class, 'index']);
+    Route::post('/staff', [StaffController::class, 'store']);
+    Route::get('/staff/stats', [StaffController::class, 'getStats']);
+    Route::get('/staff/active', [StaffController::class, 'getActive']);
+    Route::get('/staff/search', [StaffController::class, 'search']);
+    Route::get('/staff/hierarchy', [StaffController::class, 'getManagersHierarchy']);
+    Route::get('/staff/cx', [StaffController::class, 'getCXStaff']);
+    Route::get('/staff/cx/{id}', [StaffController::class, 'getCXStaff']);
+    Route::get('/staff/cx-dashboard', [StaffController::class, 'getCXDashboard']);
+    Route::get('/staff/tsr', [StaffController::class, 'getTSRStaff']);
+    Route::get('/staff/tsr/{id}', [StaffController::class, 'getTSRStaff']);
+    Route::get('/staff/tsr-dashboard', [StaffController::class, 'getTSRDashboard']);
+    Route::get('/staff/tsr-workload', [StaffController::class, 'getTSRWorkload']);
+    Route::get('/staff/role/{role}', [StaffController::class, 'getByRole']);
+    Route::get('/staff/department/{department}', [StaffController::class, 'getByDepartment']);
+    Route::get('/staff/{id}', [StaffController::class, 'show']);
+    Route::put('/staff/{id}', [StaffController::class, 'update']);
+    Route::delete('/staff/{id}', [StaffController::class, 'destroy']);
+    
+    Route::get('/tenants', [TenantController::class, 'index']);
+    Route::get('/tenants/stats', [TenantController::class, 'getStats']);
+    Route::get('/tenants/search', [TenantController::class, 'search']);
+    Route::get('/tenants/profile', [TenantController::class, 'getProfile']);
+    Route::get('/tenants/profile/{id}', [TenantController::class, 'getProfile']);
+    Route::get('/tenants/rental-info', [TenantController::class, 'getRentalInfo']);
+    Route::get('/tenants/rental-info/{id}', [TenantController::class, 'getRentalInfo']);
+    Route::get('/tenants/verification/{status}', [TenantController::class, 'getByVerificationStatus']);
+    Route::get('/tenants/renewals/{days?}', [TenantController::class, 'getUpcomingRenewals']);
+    Route::put('/tenants/account-manager', [TenantController::class, 'updateAccountManager']);
+    Route::get('/tenants/{id}', [TenantController::class, 'show']);
+    
+    Route::get('/account-managers', [AccountManagerController::class, 'index']);
+    Route::get('/account-managers/search', [AccountManagerController::class, 'search']);
+    Route::get('/account-managers/workload', [AccountManagerController::class, 'getWorkloadDistribution']);
+    Route::get('/account-managers/unassigned-clients', [AccountManagerController::class, 'getUnassignedClients']);
+    Route::post('/account-managers/assign', [AccountManagerController::class, 'assignManager']);
+    Route::post('/account-managers/remove', [AccountManagerController::class, 'removeManager']);
+    Route::post('/account-managers/bulk-assign', [AccountManagerController::class, 'bulkAssign']);
+    Route::get('/account-managers/{id}', [AccountManagerController::class, 'show']);
+    Route::get('/account-managers/{id}/performance', [AccountManagerController::class, 'getPerformanceStats']);
+    
+    Route::get('/transactions', [TransactionController::class, 'index']);
+    Route::post('/transactions', [TransactionController::class, 'store']);
+    Route::get('/transactions/count', [TransactionController::class, 'count']);
+    Route::get('/transactions/stats', [TransactionController::class, 'getStats']);
+    Route::get('/transactions/search', [TransactionController::class, 'search']);
+    Route::get('/transactions/date-range', [TransactionController::class, 'getByDateRange']);
+    Route::get('/transactions/status/{status}', [TransactionController::class, 'getByStatus']);
+    Route::get('/transactions/type/{type}', [TransactionController::class, 'getByType']);
+    Route::get('/transactions/user/{userId}', [TransactionController::class, 'getByUser']);
+    Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::put('/transactions/{id}', [TransactionController::class, 'update']);
+    
+    Route::get('/verifications', [VerificationController::class, 'index']);
+    Route::post('/verifications', [VerificationController::class, 'store']);
+    Route::get('/verifications/count', [VerificationController::class, 'count']);
+    Route::get('/verifications/stats', [VerificationController::class, 'getStats']);
+    Route::get('/verifications/search', [VerificationController::class, 'search']);
+    Route::get('/verifications/status/{status}', [VerificationController::class, 'getByStatus']);
+    Route::post('/verifications/update-status', [VerificationController::class, 'updateStatus']);
+    Route::get('/verifications/{id}', [VerificationController::class, 'show']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
 });
