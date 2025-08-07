@@ -1,0 +1,501 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+
+class LandlordController extends Controller
+{
+    /**
+     * Display a listing of all landlords (Improved version of your original).
+     */
+    public function index()
+    {
+        try {
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->select(
+                    'userID',
+                    'firstName', 
+                    'lastName',
+                    'email',
+                    'phone',
+                    'verified',
+                    'user_type',
+                    'profile_image',
+                    'address',
+                    'state',
+                    'country',
+                    'date_created',
+                    'last_login'
+                )
+                ->orderBy('date_created', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlords retrieved successfully',
+                'data' => $landlords,
+                'count' => $landlords->count()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified landlord.
+     */
+    public function show(string $id)
+    {
+        try {
+            $landlord = DB::table('user_tbl')
+                ->where('userID', $id)
+                ->where('user_type', 'landlord')
+                ->first();
+
+            if (!$landlord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Landlord not found'
+                ], 404);
+            }
+
+            // Get landlord's properties
+            $properties = DB::table('property_tbl')
+                ->where('landlordID', $id)
+                ->select('propertyID', 'propertyTitle', 'address', 'price', 'propertyType', 'status')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord retrieved successfully',
+                'data' => [
+                    'landlord_info' => $landlord,
+                    'properties' => $properties,
+                    'property_count' => $properties->count()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlord',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created landlord (Improved version of your original).
+     */
+    public function store(Request $request)
+    {
+        // Enhanced validation rules
+        $validator = Validator::make($request->all(), [
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'email' => 'required|email|unique:user_tbl,email|max:255',
+            'phone' => 'required|string|max:20',
+            'password' => 'required|string|min:8|max:255',
+            'address' => 'nullable|string|max:500',
+            'state' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Handle image upload
+            $profileImagePath = null;
+            if ($request->hasFile('profile_image')) {
+                $image = $request->file('profile_image');
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $profileImagePath = $image->storeAs('landlord_images', $imageName, 'public');
+            }
+
+            // Prepare data for insertion
+            $data = [
+                'firstName' => $request->firstName,
+                'lastName' => $request->lastName,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => bcrypt($request->password),
+                'user_type' => 'landlord',
+                'address' => $request->address,
+                'state' => $request->state,
+                'country' => $request->country,
+                'profile_image' => $profileImagePath,
+                'verified' => 0,
+                'date_created' => now(),
+            ];
+
+            // Insert landlord and get ID
+            $landlordId = DB::table('user_tbl')->insertGetId($data);
+
+            if ($landlordId) {
+                // Retrieve the created landlord (excluding password)
+                $createdLandlord = DB::table('user_tbl')
+                    ->where('userID', $landlordId)
+                    ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type', 
+                             'profile_image', 'address', 'state', 'country', 'verified', 'date_created')
+                    ->first();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Landlord created successfully',
+                    'data' => $createdLandlord,
+                    'id' => $landlordId
+                ], 201);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create landlord'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while creating landlord',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified landlord.
+     */
+    public function update(Request $request, string $id)
+    {
+        $landlord = DB::table('user_tbl')
+            ->where('userID', $id)
+            ->where('user_type', 'landlord')
+            ->first();
+
+        if (!$landlord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Landlord not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'firstName' => 'sometimes|string|max:255',
+            'lastName' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:user_tbl,email,' . $id . ',userID|max:255',
+            'phone' => 'sometimes|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'state' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'verified' => 'sometimes|boolean',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $updateData = $request->only([
+                'firstName', 'lastName', 'email', 'phone', 
+                'address', 'state', 'country', 'verified'
+            ]);
+
+            // Handle image upload
+            if ($request->hasFile('profile_image')) {
+                // Delete old image if exists
+                if ($landlord->profile_image) {
+                    Storage::disk('public')->delete($landlord->profile_image);
+                }
+
+                $image = $request->file('profile_image');
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $updateData['profile_image'] = $image->storeAs('landlord_images', $imageName, 'public');
+            }
+
+            DB::table('user_tbl')->where('userID', $id)->update($updateData);
+            
+            $updatedLandlord = DB::table('user_tbl')
+                ->where('userID', $id)
+                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
+                         'profile_image', 'address', 'state', 'country', 'verified', 'date_created')
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord updated successfully',
+                'data' => $updatedLandlord
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating landlord',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified landlord.
+     */
+    public function destroy(string $id)
+    {
+        $landlord = DB::table('user_tbl')
+            ->where('userID', $id)
+            ->where('user_type', 'landlord')
+            ->first();
+
+        if (!$landlord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Landlord not found'
+            ], 404);
+        }
+
+        try {
+            // Delete profile image if exists
+            if ($landlord->profile_image) {
+                Storage::disk('public')->delete($landlord->profile_image);
+            }
+
+            DB::table('user_tbl')->where('userID', $id)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting landlord',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get landlords count (Improved version of your original).
+     */
+    public function count()
+    {
+        try {
+            $totalCount = DB::table('user_tbl')->where('user_type', 'landlord')->count();
+            $verifiedCount = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('verified', 1)
+                ->count();
+            $unverifiedCount = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('verified', 0)
+                ->count();
+            
+            // Recent landlords (last 30 days)
+            $recentCount = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('date_created', '>=', now()->subDays(30))
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord count retrieved successfully',
+                'total_landlords' => $totalCount,
+                'verified_landlords' => $verifiedCount,
+                'unverified_landlords' => $unverifiedCount,
+                'recent_landlords_30_days' => $recentCount
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlord count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get verified landlords.
+     */
+    public function getVerified()
+    {
+        try {
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('verified', 1)
+                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'profile_image', 
+                         'address', 'state', 'country', 'date_created')
+                ->orderBy('date_created', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verified landlords retrieved successfully',
+                'data' => $landlords,
+                'count' => $landlords->count()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving verified landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get landlords by state.
+     */
+    public function getByState($state)
+    {
+        try {
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('state', $state)
+                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
+                         'profile_image', 'address', 'state', 'country', 'date_created')
+                ->orderBy('date_created', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlords retrieved successfully',
+                'data' => $landlords,
+                'count' => $landlords->count(),
+                'state' => $state
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Search landlords by name or email.
+     */
+    public function search(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'query' => 'required|string|min:2|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $query = $request->input('query');
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where(function($q) use ($query) {
+                    $q->where('firstName', 'LIKE', "%{$query}%")
+                      ->orWhere('lastName', 'LIKE', "%{$query}%")
+                      ->orWhere('email', 'LIKE', "%{$query}%");
+                })
+                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
+                         'profile_image', 'address', 'state', 'country', 'date_created')
+                ->orderBy('date_created', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord search results',
+                'data' => $landlords,
+                'count' => $landlords->count(),
+                'search_query' => $query
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while searching landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get landlord statistics.
+     */
+    public function getStats()
+    {
+        try {
+            $totalLandlords = DB::table('user_tbl')->where('user_type', 'landlord')->count();
+            $verifiedLandlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('verified', 1)
+                ->count();
+            
+            $stateStats = DB::table('user_tbl')
+                ->select('state', DB::raw('count(*) as count'))
+                ->where('user_type', 'landlord')
+                ->whereNotNull('state')
+                ->groupBy('state')
+                ->orderBy('count', 'desc')
+                ->get();
+
+            $recentLandlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('date_created', '>=', now()->subDays(30))
+                ->count();
+
+            // Properties owned by landlords
+            $totalProperties = DB::table('property_tbl')
+                ->whereIn('landlordID', function($query) {
+                    $query->select('userID')
+                          ->from('user_tbl')
+                          ->where('user_type', 'landlord');
+                })
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord statistics retrieved successfully',
+                'total_landlords' => $totalLandlords,
+                'verified_landlords' => $verifiedLandlords,
+                'verification_rate' => $totalLandlords > 0 ? round(($verifiedLandlords / $totalLandlords) * 100, 2) : 0,
+                'recent_landlords_30_days' => $recentLandlords,
+                'total_properties_owned' => $totalProperties,
+                'state_breakdown' => $stateStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlord statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
