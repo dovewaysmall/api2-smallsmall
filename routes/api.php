@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\LandlordController;
+use App\Http\Controllers\Api\PayoutController;
+use App\Http\Controllers\Api\PropertyController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -80,6 +82,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/landlords/{id}', [LandlordController::class, 'show']);
     Route::put('/landlords/{id}', [LandlordController::class, 'update']);
     Route::delete('/landlords/{id}', [LandlordController::class, 'destroy']);
+    
+    Route::get('/payouts', [PayoutController::class, 'index']);
+    Route::post('/payouts', [PayoutController::class, 'store']);
+    Route::get('/payouts/stats', [PayoutController::class, 'getStats']);
+    Route::get('/payouts/status/{status}', [PayoutController::class, 'getByStatus']);
+    Route::get('/payouts/payee/{payeeId}', [PayoutController::class, 'getByPayee']);
+    Route::get('/payouts/due/{days?}', [PayoutController::class, 'getDue']);
+    Route::get('/payouts/date-range', [PayoutController::class, 'getByDateRange']);
+    Route::get('/payouts/{id}', [PayoutController::class, 'show']);
+    Route::put('/payouts/{id}', [PayoutController::class, 'update']);
+    Route::delete('/payouts/{id}', [PayoutController::class, 'destroy']);
+    
+    Route::get('/properties', [PropertyController::class, 'index']);
+    Route::post('/properties', [PropertyController::class, 'store']);
+    Route::get('/properties/stats', [PropertyController::class, 'getStats']);
+    Route::get('/properties/featured', [PropertyController::class, 'getFeatured']);
+    Route::get('/properties/search', [PropertyController::class, 'search']);
+    Route::get('/properties/location', [PropertyController::class, 'getByLocation']);
+    Route::get('/properties/status/{status}', [PropertyController::class, 'getByStatus']);
+    Route::get('/properties/owner/{landlordId}', [PropertyController::class, 'getByOwner']);
+    Route::get('/properties/{id}', [PropertyController::class, 'show']);
+    Route::put('/properties/{id}', [PropertyController::class, 'update']);
+    Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
 });
