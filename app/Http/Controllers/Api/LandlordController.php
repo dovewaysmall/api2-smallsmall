@@ -25,9 +25,6 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'address',
-                    'state',
-                    'country',
                     'date_created',
                     'last_login'
                 )
@@ -105,9 +102,6 @@ class LandlordController extends Controller
             'email' => 'required|email|unique:user_tbl,email|max:255',
             'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8|max:255',
-            'address' => 'nullable|string|max:500',
-            'state' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -127,9 +121,6 @@ class LandlordController extends Controller
                 'phone' => $request->phone,
                 'password' => bcrypt($request->password),
                 'user_type' => 'landlord',
-                'address' => $request->address,
-                'state' => $request->state,
-                'country' => $request->country,
                 'verified' => 0,
                 'date_created' => now(),
             ];
@@ -142,7 +133,7 @@ class LandlordController extends Controller
                 $createdLandlord = DB::table('user_tbl')
                     ->where('userID', $landlordId)
                     ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type', 
-                             'address', 'state', 'country', 'verified', 'date_created')
+                             'verified', 'date_created')
                     ->first();
 
                 return response()->json([
@@ -189,9 +180,6 @@ class LandlordController extends Controller
             'lastName' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:user_tbl,email,' . $id . ',userID|max:255',
             'phone' => 'sometimes|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'state' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
             'verified' => 'sometimes|boolean',
         ]);
 
@@ -206,7 +194,7 @@ class LandlordController extends Controller
         try {
             $updateData = $request->only([
                 'firstName', 'lastName', 'email', 'phone', 
-                'address', 'state', 'country', 'verified'
+                'verified'
             ]);
 
 
@@ -215,7 +203,7 @@ class LandlordController extends Controller
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'address', 'state', 'country', 'verified', 'date_created')
+                         'verified', 'date_created')
                 ->first();
 
             return response()->json([
@@ -318,7 +306,7 @@ class LandlordController extends Controller
                 ->where('user_type', 'landlord')
                 ->where('verified', 1)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 
-                         'address', 'state', 'country', 'date_created')
+                         'date_created')
                 ->orderBy('date_created', 'desc')
                 ->get();
 
@@ -338,36 +326,6 @@ class LandlordController extends Controller
         }
     }
 
-    /**
-     * Get landlords by state.
-     */
-    public function getByState($state)
-    {
-        try {
-            $landlords = DB::table('user_tbl')
-                ->where('user_type', 'landlord')
-                ->where('state', $state)
-                ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'address', 'state', 'country', 'date_created')
-                ->orderBy('date_created', 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Landlords retrieved successfully',
-                'data' => $landlords,
-                'count' => $landlords->count(),
-                'state' => $state
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while retrieving landlords',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Search landlords by name or email.
@@ -396,7 +354,7 @@ class LandlordController extends Controller
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'address', 'state', 'country', 'date_created')
+                         'date_created')
                 ->orderBy('date_created', 'desc')
                 ->get();
 
@@ -429,13 +387,6 @@ class LandlordController extends Controller
                 ->where('verified', 1)
                 ->count();
             
-            $stateStats = DB::table('user_tbl')
-                ->select('state', DB::raw('count(*) as count'))
-                ->where('user_type', 'landlord')
-                ->whereNotNull('state')
-                ->groupBy('state')
-                ->orderBy('count', 'desc')
-                ->get();
 
             $recentLandlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
@@ -458,8 +409,7 @@ class LandlordController extends Controller
                 'verified_landlords' => $verifiedLandlords,
                 'verification_rate' => $totalLandlords > 0 ? round(($verifiedLandlords / $totalLandlords) * 100, 2) : 0,
                 'recent_landlords_30_days' => $recentLandlords,
-                'total_properties_owned' => $totalProperties,
-                'state_breakdown' => $stateStats
+                'total_properties_owned' => $totalProperties
             ]);
 
         } catch (\Exception $e) {

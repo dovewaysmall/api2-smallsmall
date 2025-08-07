@@ -84,7 +84,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/landlords/stats', [LandlordController::class, 'getStats']);
     Route::get('/landlords/verified', [LandlordController::class, 'getVerified']);
     Route::get('/landlords/search', [LandlordController::class, 'search']);
-    Route::get('/landlords/state/{state}', [LandlordController::class, 'getByState']);
     Route::get('/landlords/{id}', [LandlordController::class, 'show']);
     Route::put('/landlords/{id}', [LandlordController::class, 'update']);
     Route::delete('/landlords/{id}', [LandlordController::class, 'destroy']);
