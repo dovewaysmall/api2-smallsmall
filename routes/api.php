@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/properties', [PropertyController::class, 'index']);
     Route::post('/properties', [PropertyController::class, 'store']);
+    Route::get('/properties/count', [PropertyController::class, 'count']);
     Route::get('/properties/stats', [PropertyController::class, 'getStats']);
     Route::get('/properties/featured', [PropertyController::class, 'getFeatured']);
     Route::get('/properties/search', [PropertyController::class, 'search']);

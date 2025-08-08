@@ -582,6 +582,29 @@ class PropertyController extends Controller
     }
 
     /**
+     * Get property count.
+     */
+    public function count()
+    {
+        try {
+            $totalCount = DB::table('property_tbl')->count();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Property count retrieved successfully',
+                'count' => $totalCount
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving property count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get property statistics.
      */
     public function getStats()
