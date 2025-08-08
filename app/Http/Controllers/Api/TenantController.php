@@ -16,6 +16,7 @@ class TenantController extends Controller
     {
         try {
             $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
@@ -32,7 +33,7 @@ class TenantController extends Controller
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
                 )
-                ->where('user_tbl.user_type', 'tenant')
+                ->distinct()
                 ->orderBy('user_tbl.regDate', 'desc')
                 ->get();
 
@@ -59,6 +60,7 @@ class TenantController extends Controller
     {
         try {
             $tenant = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
                 ->select(
                     'user_tbl.*',
@@ -67,7 +69,6 @@ class TenantController extends Controller
                     'manager.email as manager_email'
                 )
                 ->where('user_tbl.userID', $id)
-                ->where('user_tbl.user_type', 'tenant')
                 ->first();
 
             if (!$tenant) {
@@ -119,6 +120,7 @@ class TenantController extends Controller
     {
         try {
             $query = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('inspection_tbl', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(inspection_tbl.userID AS CHAR)'))
                 ->leftJoin('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
@@ -144,8 +146,7 @@ class TenantController extends Controller
                     'property_tbl.address as property_address',
                     'property_tbl.city',
                     'property_tbl.state as property_state'
-                )
-                ->where('user_tbl.user_type', 'tenant');
+                );
 
             if ($id) {
                 $tenantProfiles = $query->where('user_tbl.userID', $id)->get();
@@ -233,7 +234,7 @@ class TenantController extends Controller
                     'property_tbl.city',
                     'property_tbl.state as property_state'
                 )
-                ->where('user_tbl.user_type', 'tenant');
+;
 
             if ($id) {
                 $rentalInfo = $query->where('bookings.userID', $id)
@@ -305,10 +306,10 @@ class TenantController extends Controller
         }
 
         try {
-            // Check if the tenant exists
+            // Check if the tenant exists (user with bookings)
             $tenant = DB::table('user_tbl')
-                ->where('userID', $request->userID)
-                ->where('user_type', 'tenant')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->where('user_tbl.userID', $request->userID)
                 ->first();
 
             if (!$tenant) {
@@ -387,6 +388,7 @@ class TenantController extends Controller
             if ($status === 'unverified') $status = 0;
 
             $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
@@ -400,8 +402,8 @@ class TenantController extends Controller
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
                 )
-                ->where('user_tbl.user_type', 'tenant')
                 ->where('user_tbl.verified', $status)
+                ->distinct()
                 ->orderBy('user_tbl.regDate', 'desc')
                 ->get();
 
@@ -442,6 +444,7 @@ class TenantController extends Controller
         try {
             $query = $request->input('query');
             $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
@@ -455,13 +458,13 @@ class TenantController extends Controller
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
                 )
-                ->where('user_tbl.user_type', 'tenant')
                 ->where(function($q) use ($query) {
                     $q->where('user_tbl.firstName', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.lastName', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.email', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.phone', 'LIKE', "%{$query}%");
                 })
+                ->distinct()
                 ->orderBy('user_tbl.firstName', 'asc')
                 ->get();
 
@@ -483,47 +486,73 @@ class TenantController extends Controller
     }
 
     /**
+     * Get tenant count.
+     */
+    public function count()
+    {
+        try {
+            // Count distinct users who have bookings (actual tenants)
+            $totalCount = DB::table('bookings')
+                ->distinct()
+                ->count('userID');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Tenant count retrieved successfully',
+                'count' => $totalCount
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving tenant count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get tenant statistics.
      */
     public function getStats()
     {
         try {
-            $totalTenants = DB::table('user_tbl')->where('user_type', 'tenant')->count();
+            $totalTenants = DB::table('bookings')->distinct()->count('userID');
+            
             $verifiedTenants = DB::table('user_tbl')
-                ->where('user_type', 'tenant')
-                ->where('verified', 1)
-                ->count();
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->where('user_tbl.verified', 1)
+                ->distinct()
+                ->count('user_tbl.userID');
             
             $tenantsWithManager = DB::table('user_tbl')
-                ->where('user_type', 'tenant')
-                ->whereNotNull('account_manager')
-                ->count();
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->whereNotNull('user_tbl.account_manager')
+                ->distinct()
+                ->count('user_tbl.userID');
 
             $activeRentals = DB::table('bookings')
-                ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->where('user_tbl.user_type', 'tenant')
-                ->where('bookings.rent_status', 'active')
+                ->where('rent_status', 'active')
                 ->count();
 
             $recentTenants = DB::table('user_tbl')
-                ->where('user_type', 'tenant')
-                ->where('regDate', '>=', now()->subDays(30))
-                ->count();
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->where('user_tbl.regDate', '>=', now()->subDays(30))
+                ->distinct()
+                ->count('user_tbl.userID');
 
             $countryStats = DB::table('user_tbl')
-                ->select('country', DB::raw('count(*) as count'))
-                ->where('user_type', 'tenant')
-                ->whereNotNull('country')
-                ->groupBy('country')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->select('user_tbl.country', DB::raw('count(distinct user_tbl.userID) as count'))
+                ->whereNotNull('user_tbl.country')
+                ->groupBy('user_tbl.country')
                 ->orderBy('count', 'desc')
                 ->limit(10)
                 ->get();
 
             $totalRentRevenue = DB::table('bookings')
-                ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->where('user_tbl.user_type', 'tenant')
-                ->where('bookings.rent_status', 'active')
-                ->sum('bookings.total');
+                ->where('rent_status', 'active')
+                ->sum('total');
 
             return response()->json([
                 'success' => true,
@@ -570,7 +599,6 @@ class TenantController extends Controller
                     'property_tbl.propertyTitle',
                     'property_tbl.address as property_address'
                 )
-                ->where('user_tbl.user_type', 'tenant')
                 ->where('bookings.rent_status', 'active')
                 ->whereBetween('bookings.rent_expiration', [now(), now()->addDays($days)])
                 ->orderBy('bookings.rent_expiration', 'asc')

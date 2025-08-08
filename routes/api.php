@@ -145,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/staff/{id}', [StaffController::class, 'destroy']);
     
     Route::get('/tenants', [TenantController::class, 'index']);
+    Route::get('/tenants/count', [TenantController::class, 'count']);
     Route::get('/tenants/stats', [TenantController::class, 'getStats']);
     Route::get('/tenants/search', [TenantController::class, 'search']);
     Route::get('/tenants/profile', [TenantController::class, 'getProfile']);
