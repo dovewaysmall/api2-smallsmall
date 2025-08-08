@@ -411,6 +411,31 @@ class InspectionController extends Controller
     }
 
     /**
+     * Get inspection count.
+     */
+    public function count()
+    {
+        try {
+            // Count all records in inspection_tbl
+            $totalCount = DB::table('inspection_tbl')->count('*');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Inspection count retrieved successfully',
+                'count' => $totalCount,
+                'table' => 'inspection_tbl'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving inspection count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get inspection statistics.
      */
     public function getStats()

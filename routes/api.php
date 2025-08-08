@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/inspections', [InspectionController::class, 'index']);
     Route::post('/inspections', [InspectionController::class, 'store']);
+    Route::get('/inspections/count', [InspectionController::class, 'count']);
     Route::get('/inspections/stats', [InspectionController::class, 'getStats']);
     Route::get('/inspections/status/{status}', [InspectionController::class, 'getByStatus']);
     Route::get('/inspections/type/{type}', [InspectionController::class, 'getByType']);
