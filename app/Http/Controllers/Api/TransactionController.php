@@ -236,28 +236,11 @@ class TransactionController extends Controller
     {
         try {
             $totalCount = DB::table('transaction_tbl')->count();
-            $todayCount = DB::table('transaction_tbl')
-                ->whereDate('transaction_date', today())
-                ->count();
-            $thisMonthCount = DB::table('transaction_tbl')
-                ->whereMonth('transaction_date', now()->month)
-                ->whereYear('transaction_date', now()->year)
-                ->count();
-            $completedCount = DB::table('transaction_tbl')
-                ->where('transaction_status', 'completed')
-                ->count();
-            $pendingCount = DB::table('transaction_tbl')
-                ->where('transaction_status', 'pending')
-                ->count();
-
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Transaction count retrieved successfully',
-                'total_transactions' => $totalCount,
-                'today_transactions' => $todayCount,
-                'this_month_transactions' => $thisMonthCount,
-                'completed_transactions' => $completedCount,
-                'pending_transactions' => $pendingCount
+                'count' => $totalCount
             ]);
 
         } catch (\Exception $e) {
