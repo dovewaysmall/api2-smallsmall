@@ -25,18 +25,15 @@ class TenantController extends Controller
                     'user_tbl.phone',
                     'user_tbl.verified',
                     'user_tbl.user_type',
-                    'user_tbl.profile_image',
-                    'user_tbl.address',
-                    'user_tbl.state',
+                    'user_tbl.profile_picture',
                     'user_tbl.country',
-                    'user_tbl.date_created',
-                    'user_tbl.last_login',
+                    'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
                 )
                 ->where('user_tbl.user_type', 'tenant')
-                ->orderBy('user_tbl.date_created', 'desc')
+                ->orderBy('user_tbl.regDate', 'desc')
                 ->get();
 
             return response()->json([
@@ -132,11 +129,9 @@ class TenantController extends Controller
                     'user_tbl.verified',
                     'user_tbl.email',
                     'user_tbl.phone',
-                    'user_tbl.profile_image',
-                    'user_tbl.address as tenant_address',
-                    'user_tbl.state',
+                    'user_tbl.profile_picture',
                     'user_tbl.country',
-                    'user_tbl.date_created',
+                    'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName',
@@ -177,11 +172,9 @@ class TenantController extends Controller
                             'verified' => $tenantInfo->verified,
                             'email' => $tenantInfo->email,
                             'phone' => $tenantInfo->phone,
-                            'profile_image' => $tenantInfo->profile_image,
-                            'tenant_address' => $tenantInfo->tenant_address,
-                            'state' => $tenantInfo->state,
+                            'profile_picture' => $tenantInfo->profile_picture,
                             'country' => $tenantInfo->country,
-                            'date_created' => $tenantInfo->date_created,
+                            'regDate' => $tenantInfo->regDate,
                             'account_manager' => $tenantInfo->account_manager,
                             'manager_name' => $tenantInfo->manager_firstName . ' ' . $tenantInfo->manager_lastName
                         ],
@@ -231,7 +224,7 @@ class TenantController extends Controller
                     'bookings.next_rental',
                     'bookings.rent_expiration',
                     'bookings.rent_status',
-                    'bookings.rent_amount',
+                    'bookings.total',
                     'bookings.payment_frequency',
                     'bookings.booking_date',
                     'bookings.booking_status',
@@ -261,7 +254,7 @@ class TenantController extends Controller
                     'total_bookings' => $rentalInfo->count(),
                     'active_rentals' => $rentalInfo->where('rent_status', 'active')->count(),
                     'expired_rentals' => $rentalInfo->where('rent_status', 'expired')->count(),
-                    'total_rent_amount' => $rentalInfo->where('rent_status', 'active')->sum('rent_amount'),
+                    'total_rent_amount' => $rentalInfo->where('rent_status', 'active')->sum('total'),
                     'upcoming_renewals' => $rentalInfo->where('rent_expiration', '>=', now())
                         ->where('rent_expiration', '<=', now()->addDays(30))->count()
                 ];
@@ -402,14 +395,14 @@ class TenantController extends Controller
                     'user_tbl.email',
                     'user_tbl.phone',
                     'user_tbl.verified',
-                    'user_tbl.date_created',
+                    'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
                 )
                 ->where('user_tbl.user_type', 'tenant')
                 ->where('user_tbl.verified', $status)
-                ->orderBy('user_tbl.date_created', 'desc')
+                ->orderBy('user_tbl.regDate', 'desc')
                 ->get();
 
             return response()->json([
@@ -457,7 +450,7 @@ class TenantController extends Controller
                     'user_tbl.email',
                     'user_tbl.phone',
                     'user_tbl.verified',
-                    'user_tbl.date_created',
+                    'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
                     'manager.lastName as manager_lastName'
@@ -514,14 +507,14 @@ class TenantController extends Controller
 
             $recentTenants = DB::table('user_tbl')
                 ->where('user_type', 'tenant')
-                ->where('date_created', '>=', now()->subDays(30))
+                ->where('regDate', '>=', now()->subDays(30))
                 ->count();
 
-            $stateStats = DB::table('user_tbl')
-                ->select('state', DB::raw('count(*) as count'))
+            $countryStats = DB::table('user_tbl')
+                ->select('country', DB::raw('count(*) as count'))
                 ->where('user_type', 'tenant')
-                ->whereNotNull('state')
-                ->groupBy('state')
+                ->whereNotNull('country')
+                ->groupBy('country')
                 ->orderBy('count', 'desc')
                 ->limit(10)
                 ->get();
@@ -530,7 +523,7 @@ class TenantController extends Controller
                 ->join('user_tbl', DB::raw('CAST(bookings.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->where('user_tbl.user_type', 'tenant')
                 ->where('bookings.rent_status', 'active')
-                ->sum('bookings.rent_amount');
+                ->sum('bookings.total');
 
             return response()->json([
                 'success' => true,
@@ -542,7 +535,7 @@ class TenantController extends Controller
                 'active_rentals' => $activeRentals,
                 'recent_tenants_30_days' => $recentTenants,
                 'total_rent_revenue' => round($totalRentRevenue, 2),
-                'state_breakdown' => $stateStats
+                'country_breakdown' => $countryStats
             ]);
 
         } catch (\Exception $e) {
@@ -572,7 +565,7 @@ class TenantController extends Controller
                     'bookings.bookingID',
                     'bookings.rent_expiration',
                     'bookings.next_rental',
-                    'bookings.rent_amount',
+                    'bookings.total',
                     'bookings.rent_status',
                     'property_tbl.propertyTitle',
                     'property_tbl.address as property_address'
@@ -588,7 +581,7 @@ class TenantController extends Controller
                 'message' => "Upcoming rent renewals within {$days} days retrieved successfully",
                 'data' => $upcomingRenewals,
                 'count' => $upcomingRenewals->count(),
-                'total_renewal_amount' => $upcomingRenewals->sum('rent_amount'),
+                'total_renewal_amount' => $upcomingRenewals->sum('total'),
                 'days_ahead' => $days
             ]);
 
