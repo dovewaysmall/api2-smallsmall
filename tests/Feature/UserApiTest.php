@@ -2,30 +2,33 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class UserApiTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
         
-        // Skip tests in CI environments to avoid MySQL connection timeouts
-        if (env('CI') || env('GITHUB_ACTIONS')) {
-            $this->markTestSkipped('Skipping database tests in CI environment - no MySQL available');
-        }
-        
-        // For local development, ensure database connection works
-        try {
-            DB::connection()->getPdo();
-        } catch (\Exception $e) {
-            $this->markTestSkipped('Database connection failed: ' . $e->getMessage());
+        // Create the user_tbl table for SQLite testing
+        if (!Schema::hasTable('user_tbl')) {
+            Schema::create('user_tbl', function ($table) {
+                $table->id();
+                $table->string('userID')->unique();
+                $table->string('firstName');
+                $table->string('lastName');
+                $table->string('email')->unique();
+                $table->string('password');
+                $table->string('phone')->nullable();
+                $table->string('user_type')->default('tenant');
+                $table->timestamps();
+            });
         }
     }
 
@@ -37,16 +40,8 @@ class UserApiTest extends TestCase
 
     public function test_users_endpoint_returns_users_list(): void
     {
-        // Use an existing user or create one for testing
-        $user = User::first();
-        if (!$user) {
-            try {
-                $user = User::factory()->create();
-            } catch (\Exception $e) {
-                $this->markTestSkipped('Could not create test user: ' . $e->getMessage());
-            }
-        }
-        
+        // Create test user directly
+        $user = $this->createTestUser();
         Sanctum::actingAs($user);
 
         $response = $this->getJson('/api/users');
@@ -62,15 +57,7 @@ class UserApiTest extends TestCase
 
     public function test_users_count_endpoint(): void
     {
-        $user = User::first();
-        if (!$user) {
-            try {
-                $user = User::factory()->create();
-            } catch (\Exception $e) {
-                $this->markTestSkipped('Could not create test user: ' . $e->getMessage());
-            }
-        }
-        
+        $user = $this->createTestUser();
         Sanctum::actingAs($user);
 
         $response = $this->getJson('/api/users/count');
@@ -80,15 +67,7 @@ class UserApiTest extends TestCase
 
     public function test_user_show_endpoint(): void
     {
-        $user = User::first();
-        if (!$user) {
-            try {
-                $user = User::factory()->create();
-            } catch (\Exception $e) {
-                $this->markTestSkipped('Could not create test user: ' . $e->getMessage());
-            }
-        }
-        
+        $user = $this->createTestUser();
         Sanctum::actingAs($user);
 
         $response = $this->getJson("/api/users/{$user->id}");
@@ -97,6 +76,19 @@ class UserApiTest extends TestCase
             'data' => [
                 'id'
             ]
+        ]);
+    }
+
+    private function createTestUser(): User
+    {
+        return User::create([
+            'userID' => 'TEST' . time(),
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'email' => 'test' . time() . '@example.com',
+            'password' => bcrypt('password'),
+            'phone' => '1234567890',
+            'user_type' => 'tenant'
         ]);
     }
 }
