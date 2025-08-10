@@ -15,9 +15,18 @@ class TenantController extends Controller
     public function index()
     {
         try {
+            // Get tenants with their most recent property information
             $tenants = DB::table('user_tbl')
                 ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
                     'user_tbl.firstName',
@@ -27,11 +36,15 @@ class TenantController extends Controller
                     'user_tbl.verified',
                     'user_tbl.user_type',
                     'user_tbl.profile_picture',
-                    'user_tbl.country',
                     'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
-                    'manager.lastName as manager_lastName'
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address',
+                    'property_tbl.city as current_property_city',
+                    'property_tbl.state as current_property_state',
+                    'latest_booking.booked_on as last_booking_date'
                 )
                 ->distinct()
                 ->orderBy('user_tbl.regDate', 'desc')
@@ -371,25 +384,31 @@ class TenantController extends Controller
     public function getByVerificationStatus($status)
     {
         $validator = Validator::make(['status' => $status], [
-            'status' => 'required|in:0,1,verified,unverified'
+            'status' => 'required|in:yes,no,verified,received,processing,0,1'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid verification status. Must be: 0, 1, verified, or unverified',
+                'message' => 'Invalid verification status. Must be: yes, no, verified, received, processing, 0, or 1',
                 'errors' => $validator->errors()
             ], 422);
         }
 
         try {
-            // Convert string status to numeric
-            if ($status === 'verified') $status = 1;
-            if ($status === 'unverified') $status = 0;
+            // No conversion needed - use the actual database values
 
             $tenants = DB::table('user_tbl')
                 ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
                     'user_tbl.firstName',
@@ -400,7 +419,9 @@ class TenantController extends Controller
                     'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
-                    'manager.lastName as manager_lastName'
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address'
                 )
                 ->where('user_tbl.verified', $status)
                 ->distinct()
@@ -412,7 +433,7 @@ class TenantController extends Controller
                 'message' => 'Tenants retrieved successfully',
                 'data' => $tenants,
                 'count' => $tenants->count(),
-                'verification_status' => $status == 1 ? 'verified' : 'unverified'
+                'verification_status' => $status
             ]);
 
         } catch (\Exception $e) {
@@ -446,6 +467,14 @@ class TenantController extends Controller
             $tenants = DB::table('user_tbl')
                 ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'user_tbl.userID',
                     'user_tbl.firstName',
@@ -456,7 +485,9 @@ class TenantController extends Controller
                     'user_tbl.regDate',
                     'user_tbl.account_manager',
                     'manager.firstName as manager_firstName',
-                    'manager.lastName as manager_lastName'
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address'
                 )
                 ->where(function($q) use ($query) {
                     $q->where('user_tbl.firstName', 'LIKE', "%{$query}%")
