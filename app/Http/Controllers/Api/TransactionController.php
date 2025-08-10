@@ -17,15 +17,12 @@ class TransactionController extends Controller
         try {
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'transaction_tbl.*',
                     'user_tbl.firstName as user_firstName',
                     'user_tbl.lastName as user_lastName',
                     'user_tbl.email as user_email',
-                    'user_tbl.phone as user_phone',
-                    'property_tbl.propertyTitle',
-                    'property_tbl.address as property_address'
+                    'user_tbl.phone as user_phone'
                 )
                 ->orderBy('transaction_tbl.transaction_date', 'desc')
                 ->get();
@@ -54,18 +51,13 @@ class TransactionController extends Controller
         try {
             $transaction = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'transaction_tbl.*',
                     'user_tbl.firstName as user_firstName',
                     'user_tbl.lastName as user_lastName',
                     'user_tbl.email as user_email',
                     'user_tbl.phone as user_phone',
-                    'user_tbl.user_type',
-                    'property_tbl.propertyTitle',
-                    'property_tbl.address as property_address',
-                    'property_tbl.city',
-                    'property_tbl.state as property_state'
+                    'user_tbl.user_type'
                 )
                 ->where('transaction_tbl.id', $id)
                 ->first();
@@ -99,14 +91,12 @@ class TransactionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'userID' => 'required|string|exists:user_tbl,userID',
-            'propertyID' => 'nullable|string|exists:property_tbl,propertyID',
-            'transaction_type' => 'required|in:rent_payment,deposit,refund,fee,commission,penalty,maintenance,other',
+            'type' => 'required|in:rss,furnisure,deposit,refund,fee,commission,penalty,maintenance,other',
             'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:bank_transfer,card,cash,mobile_money,cheque,other',
-            'transaction_status' => 'nullable|in:pending,completed,failed,cancelled,refunded',
-            'description' => 'nullable|string|max:1000',
-            'reference_number' => 'nullable|string|max:255',
-            'gateway_reference' => 'nullable|string|max:255',
+            'payment_type' => 'required|in:paystack,bank_transfer,card,cash,mobile_money,cheque,wallet,transfer,flutterwave,crypto,other',
+            'status' => 'nullable|in:pending,completed,failed,cancelled,refunded,approved',
+            'reference_id' => 'nullable|string|max:255',
+            'verification_id' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -120,36 +110,37 @@ class TransactionController extends Controller
         try {
             // Generate unique transaction ID
             $transactionId = 'TXN' . date('Ymd') . mt_rand(1000, 9999);
+            
+            // Get next ID
+            $nextId = DB::table('transaction_tbl')->max('id') + 1;
 
             $data = [
+                'id' => $nextId,
                 'transaction_id' => $transactionId,
                 'userID' => $request->userID,
-                'propertyID' => $request->propertyID,
-                'transaction_type' => $request->transaction_type,
+                'type' => $request->type,
                 'amount' => $request->amount,
-                'payment_method' => $request->payment_method,
-                'transaction_status' => $request->transaction_status ?? 'pending',
-                'description' => $request->description,
-                'reference_number' => $request->reference_number,
-                'gateway_reference' => $request->gateway_reference,
+                'payment_type' => $request->payment_type,
+                'status' => $request->status ?? 'pending',
+                'reference_id' => $request->reference_id ?? '',
+                'verification_id' => $request->verification_id ?? '',
                 'transaction_date' => now(),
-                'created_at' => now(),
             ];
 
-            $insertedId = DB::table('transaction_tbl')->insertGetId($data);
+            $inserted = DB::table('transaction_tbl')->insert($data);
 
-            if ($insertedId) {
+            if ($inserted) {
                 $createdTransaction = DB::table('transaction_tbl')
                     ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                     ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
-                    ->where('transaction_tbl.id', $insertedId)
+                    ->where('transaction_tbl.id', $nextId)
                     ->first();
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Transaction created successfully',
                     'data' => $createdTransaction,
-                    'id' => $insertedId
+                    'id' => $nextId
                 ], 201);
             } else {
                 return response()->json([
@@ -182,12 +173,11 @@ class TransactionController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'transaction_status' => 'sometimes|in:pending,completed,failed,cancelled,refunded',
+            'status' => 'sometimes|in:pending,completed,failed,cancelled,refunded',
             'amount' => 'sometimes|numeric|min:0',
-            'payment_method' => 'sometimes|in:bank_transfer,card,cash,mobile_money,cheque,other',
-            'description' => 'nullable|string|max:1000',
-            'reference_number' => 'nullable|string|max:255',
-            'gateway_reference' => 'nullable|string|max:255',
+            'payment_type' => 'sometimes|in:paystack,bank_transfer,card,cash,mobile_money,cheque,wallet,other',
+            'reference_id' => 'nullable|string|max:255',
+            'verification_id' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -200,11 +190,9 @@ class TransactionController extends Controller
 
         try {
             $updateData = $request->only([
-                'transaction_status', 'amount', 'payment_method', 
-                'description', 'reference_number', 'gateway_reference'
+                'status', 'amount', 'payment_type', 
+                'reference_id', 'verification_id'
             ]);
-
-            $updateData['updated_at'] = now();
 
             DB::table('transaction_tbl')->where('id', $id)->update($updateData);
             
@@ -260,14 +248,11 @@ class TransactionController extends Controller
         try {
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'transaction_tbl.*',
                     'user_tbl.firstName',
                     'user_tbl.lastName',
-                    'user_tbl.email',
-                    'property_tbl.propertyTitle',
-                    'property_tbl.address as property_address'
+                    'user_tbl.email'
                 )
                 ->where('transaction_tbl.userID', $userId)
                 ->orderBy('transaction_tbl.transaction_date', 'desc')
@@ -285,11 +270,11 @@ class TransactionController extends Controller
             // Calculate user transaction statistics
             $userStats = [
                 'total_transactions' => $transactions->count(),
-                'total_amount' => $transactions->where('transaction_status', 'completed')->sum('amount'),
-                'pending_amount' => $transactions->where('transaction_status', 'pending')->sum('amount'),
-                'completed_transactions' => $transactions->where('transaction_status', 'completed')->count(),
-                'pending_transactions' => $transactions->where('transaction_status', 'pending')->count(),
-                'failed_transactions' => $transactions->where('transaction_status', 'failed')->count()
+                'total_amount' => $transactions->where('status', 'completed')->sum('amount'),
+                'pending_amount' => $transactions->where('status', 'pending')->sum('amount'),
+                'completed_transactions' => $transactions->where('status', 'completed')->count(),
+                'pending_transactions' => $transactions->where('status', 'pending')->count(),
+                'failed_transactions' => $transactions->where('status', 'failed')->count()
             ];
 
             return response()->json([
@@ -330,18 +315,21 @@ class TransactionController extends Controller
         try {
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'property_tbl.propertyTitle')
-                ->where('transaction_tbl.transaction_status', $status)
+                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
+                ->where('transaction_tbl.status', $status)
                 ->orderBy('transaction_tbl.transaction_date', 'desc')
                 ->get();
+
+            $totalAmount = $transactions->sum(function($transaction) {
+                return is_numeric($transaction->amount) ? (float)$transaction->amount : 0;
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Transactions retrieved successfully',
                 'data' => $transactions,
                 'count' => $transactions->count(),
-                'total_amount' => $transactions->sum('amount'),
+                'total_amount' => $totalAmount,
                 'status' => $status
             ]);
 
@@ -360,7 +348,7 @@ class TransactionController extends Controller
     public function getByType($type)
     {
         $validator = Validator::make(['type' => $type], [
-            'type' => 'required|in:rent_payment,deposit,refund,fee,commission,penalty,maintenance,other'
+            'type' => 'required|in:rss,furnisure,deposit,refund,fee,commission,penalty,maintenance,other'
         ]);
 
         if ($validator->fails()) {
@@ -374,18 +362,21 @@ class TransactionController extends Controller
         try {
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'property_tbl.propertyTitle')
-                ->where('transaction_tbl.transaction_type', $type)
+                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
+                ->where('transaction_tbl.type', $type)
                 ->orderBy('transaction_tbl.transaction_date', 'desc')
                 ->get();
+
+            $totalAmount = $transactions->sum(function($transaction) {
+                return is_numeric($transaction->amount) ? (float)$transaction->amount : 0;
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Transactions retrieved successfully',
                 'data' => $transactions,
                 'count' => $transactions->count(),
-                'total_amount' => $transactions->sum('amount'),
+                'total_amount' => $totalAmount,
                 'transaction_type' => $type
             ]);
 
@@ -406,23 +397,23 @@ class TransactionController extends Controller
         try {
             $totalTransactions = DB::table('transaction_tbl')->count();
             $totalAmount = DB::table('transaction_tbl')
-                ->where('transaction_status', 'completed')
+                ->where('status', 'completed')
                 ->sum('amount');
             
             $statusStats = DB::table('transaction_tbl')
-                ->select('transaction_status', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
-                ->groupBy('transaction_status')
+                ->select('status', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
+                ->groupBy('status')
                 ->get();
 
             $typeStats = DB::table('transaction_tbl')
-                ->select('transaction_type', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
-                ->groupBy('transaction_type')
+                ->select('type', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
+                ->groupBy('type')
                 ->orderBy('total_amount', 'desc')
                 ->get();
 
             $paymentMethodStats = DB::table('transaction_tbl')
-                ->select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
-                ->groupBy('payment_method')
+                ->select('payment_type', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
+                ->groupBy('payment_type')
                 ->orderBy('count', 'desc')
                 ->get();
 
@@ -487,8 +478,7 @@ class TransactionController extends Controller
         try {
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'property_tbl.propertyTitle')
+                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->whereDate('transaction_tbl.transaction_date', '>=', $request->start_date)
                 ->whereDate('transaction_tbl.transaction_date', '<=', $request->end_date)
                 ->orderBy('transaction_tbl.transaction_date', 'desc')
@@ -497,8 +487,8 @@ class TransactionController extends Controller
             $rangeStats = [
                 'total_transactions' => $transactions->count(),
                 'total_amount' => $transactions->sum('amount'),
-                'completed_amount' => $transactions->where('transaction_status', 'completed')->sum('amount'),
-                'pending_amount' => $transactions->where('transaction_status', 'pending')->sum('amount'),
+                'completed_amount' => $transactions->where('status', 'completed')->sum('amount'),
+                'pending_amount' => $transactions->where('status', 'pending')->sum('amount'),
                 'average_transaction_amount' => $transactions->count() > 0 ? round($transactions->avg('amount'), 2) : 0
             ];
 
@@ -544,12 +534,11 @@ class TransactionController extends Controller
             $query = $request->input('query');
             $transactions = DB::table('transaction_tbl')
                 ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('property_tbl', DB::raw('CAST(transaction_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'property_tbl.propertyTitle')
+                ->select('transaction_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->where(function($q) use ($query) {
                     $q->where('transaction_tbl.transaction_id', 'LIKE', "%{$query}%")
-                      ->orWhere('transaction_tbl.reference_number', 'LIKE', "%{$query}%")
-                      ->orWhere('transaction_tbl.gateway_reference', 'LIKE', "%{$query}%")
+                      ->orWhere('transaction_tbl.reference_id', 'LIKE', "%{$query}%")
+                      ->orWhere('transaction_tbl.verification_id', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.firstName', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.lastName', 'LIKE', "%{$query}%")
                       ->orWhere('user_tbl.email', 'LIKE', "%{$query}%");
