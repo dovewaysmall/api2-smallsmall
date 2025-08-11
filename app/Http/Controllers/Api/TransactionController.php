@@ -270,8 +270,8 @@ class TransactionController extends Controller
             // Calculate user transaction statistics
             $userStats = [
                 'total_transactions' => $transactions->count(),
-                'total_amount' => $transactions->where('status', 'completed')->sum('amount'),
-                'pending_amount' => $transactions->where('status', 'pending')->sum('amount'),
+                'total_amount' => $transactions->where('status', 'completed')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'pending_amount' => $transactions->where('status', 'pending')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
                 'completed_transactions' => $transactions->where('status', 'completed')->count(),
                 'pending_transactions' => $transactions->where('status', 'pending')->count(),
                 'failed_transactions' => $transactions->where('status', 'failed')->count()
@@ -398,10 +398,10 @@ class TransactionController extends Controller
             $totalTransactions = DB::table('transaction_tbl')->count();
             $totalAmount = DB::table('transaction_tbl')
                 ->where('status', 'completed')
-                ->sum('amount');
+                ->sum(DB::raw('CAST(amount AS DECIMAL(10,2))'));
             
             $statusStats = DB::table('transaction_tbl')
-                ->select('status', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'))
+                ->select('status', DB::raw('count(*) as count'), DB::raw('sum(CAST(amount AS DECIMAL(10,2))) as total_amount'))
                 ->groupBy('status')
                 ->get();
 
@@ -486,9 +486,9 @@ class TransactionController extends Controller
 
             $rangeStats = [
                 'total_transactions' => $transactions->count(),
-                'total_amount' => $transactions->sum('amount'),
-                'completed_amount' => $transactions->where('status', 'completed')->sum('amount'),
-                'pending_amount' => $transactions->where('status', 'pending')->sum('amount'),
+                'total_amount' => $transactions->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_amount' => $transactions->where('status', 'completed')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'pending_amount' => $transactions->where('status', 'pending')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
                 'average_transaction_amount' => $transactions->count() > 0 ? round($transactions->avg('amount'), 2) : 0
             ];
 

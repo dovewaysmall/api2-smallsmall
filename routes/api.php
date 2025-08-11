@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\AccountManagerController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\VerificationController;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
