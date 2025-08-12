@@ -29,6 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/count', [UserController::class, 'count']);
+    Route::get('/users/count/monthly', [UserController::class, 'monthlyCount']);
+    Route::get('/users/count/yearly', [UserController::class, 'yearlyCount']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     
     Route::get('/cx-users', [AdminController::class, 'getCXUsers']);
