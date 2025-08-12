@@ -436,6 +436,33 @@ class InspectionController extends Controller
     }
 
     /**
+     * Get inspection count for current month.
+     */
+    public function monthlyCount()
+    {
+        try {
+            $count = DB::table('inspection_tbl')
+                ->whereMonth('inspectionDate', now()->month)
+                ->whereYear('inspectionDate', now()->year)
+                ->count();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Monthly inspection count retrieved successfully',
+                'count' => $count,
+                'month' => now()->format('F Y')
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving monthly inspection count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get inspection statistics.
      */
     public function getStats()
