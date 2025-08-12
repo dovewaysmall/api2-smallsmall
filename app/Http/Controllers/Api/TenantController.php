@@ -652,4 +652,196 @@ class TenantController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get tenants registered this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+
+            $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.userID',
+                    'user_tbl.firstName',
+                    'user_tbl.lastName',
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'user_tbl.user_type',
+                    'user_tbl.profile_picture',
+                    'user_tbl.regDate',
+                    'user_tbl.account_manager',
+                    'manager.firstName as manager_firstName',
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address',
+                    'property_tbl.city as current_property_city',
+                    'property_tbl.state as current_property_state',
+                    'latest_booking.booked_on as last_booking_date'
+                )
+                ->whereBetween('user_tbl.regDate', [$startOfWeek, $endOfWeek])
+                ->distinct()
+                ->orderBy('user_tbl.regDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tenants registered this week retrieved successfully',
+                'data' => $tenants,
+                'count' => $tenants->count(),
+                'period' => [
+                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
+                    'end' => $endOfWeek->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving tenants for this week',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get tenants registered this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.userID',
+                    'user_tbl.firstName',
+                    'user_tbl.lastName',
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'user_tbl.user_type',
+                    'user_tbl.profile_picture',
+                    'user_tbl.regDate',
+                    'user_tbl.account_manager',
+                    'manager.firstName as manager_firstName',
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address',
+                    'property_tbl.city as current_property_city',
+                    'property_tbl.state as current_property_state',
+                    'latest_booking.booked_on as last_booking_date'
+                )
+                ->whereBetween('user_tbl.regDate', [$startOfMonth, $endOfMonth])
+                ->distinct()
+                ->orderBy('user_tbl.regDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tenants registered this month retrieved successfully',
+                'data' => $tenants,
+                'count' => $tenants->count(),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving tenants for this month',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get tenants registered this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            $tenants = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->leftJoin('user_tbl as manager', DB::raw('CAST(user_tbl.account_manager AS CHAR)'), '=', DB::raw('CAST(manager.userID AS CHAR)'))
+                ->leftJoin(
+                    DB::raw('(SELECT userID, propertyID, booked_on FROM bookings b1 
+                              WHERE booked_on = (SELECT MAX(b2.booked_on) FROM bookings b2 WHERE b1.userID = b2.userID)) as latest_booking'),
+                    DB::raw('CAST(user_tbl.userID AS CHAR)'),
+                    '=',
+                    DB::raw('CAST(latest_booking.userID AS CHAR)')
+                )
+                ->leftJoin('property_tbl', DB::raw('CAST(latest_booking.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.userID',
+                    'user_tbl.firstName',
+                    'user_tbl.lastName',
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'user_tbl.user_type',
+                    'user_tbl.profile_picture',
+                    'user_tbl.regDate',
+                    'user_tbl.account_manager',
+                    'manager.firstName as manager_firstName',
+                    'manager.lastName as manager_lastName',
+                    'property_tbl.propertyTitle as current_property_title',
+                    'property_tbl.address as current_property_address',
+                    'property_tbl.city as current_property_city',
+                    'property_tbl.state as current_property_state',
+                    'latest_booking.booked_on as last_booking_date'
+                )
+                ->whereBetween('user_tbl.regDate', [$startOfYear, $endOfYear])
+                ->distinct()
+                ->orderBy('user_tbl.regDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tenants registered this year retrieved successfully',
+                'data' => $tenants,
+                'count' => $tenants->count(),
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving tenants for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

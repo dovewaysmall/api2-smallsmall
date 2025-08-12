@@ -157,6 +157,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tenants/rental-info/{id}', [TenantController::class, 'getRentalInfo']);
     Route::get('/tenants/verification/{status}', [TenantController::class, 'getByVerificationStatus']);
     Route::get('/tenants/renewals/{days?}', [TenantController::class, 'getUpcomingRenewals']);
+    Route::get('/tenants/this-week', [TenantController::class, 'getThisWeek']);
+    Route::get('/tenants/this-month', [TenantController::class, 'getThisMonth']);
+    Route::get('/tenants/this-year', [TenantController::class, 'getThisYear']);
     Route::put('/tenants/account-manager', [TenantController::class, 'updateAccountManager']);
     Route::get('/tenants/{id}', [TenantController::class, 'show']);
     
