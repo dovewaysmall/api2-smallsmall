@@ -558,4 +558,190 @@ class InspectionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get inspections scheduled for this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+
+            $inspections = DB::table('inspection_tbl')
+                ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'inspection_tbl.id',
+                    'inspection_tbl.inspectionID',
+                    'inspection_tbl.userID',
+                    'inspection_tbl.propertyID',
+                    'inspection_tbl.inspectionDate',
+                    'inspection_tbl.updated_inspection_date',
+                    'inspection_tbl.inspectionType',
+                    'inspection_tbl.assigned_tsr',
+                    'inspection_tbl.inspection_status',
+                    'inspection_tbl.date_inspection_completed_canceled',
+                    'inspection_tbl.inspection_remarks',
+                    'inspection_tbl.comment',
+                    'inspection_tbl.follow_up_stage',
+                    'inspection_tbl.customer_inspec_feedback',
+                    'inspection_tbl.cx_feedback_details',
+                    'inspection_tbl.platform',
+                    'inspection_tbl.dateOfEntry',
+                    'property_tbl.propertyTitle'
+                )
+                ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfWeek)
+                ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfWeek)
+                ->orderBy('inspection_tbl.inspectionDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Inspections for this week retrieved successfully',
+                'data' => $inspections,
+                'count' => $inspections->count(),
+                'period' => [
+                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
+                    'end' => $endOfWeek->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving inspections for this week',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get inspections scheduled for this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            $inspections = DB::table('inspection_tbl')
+                ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'inspection_tbl.id',
+                    'inspection_tbl.inspectionID',
+                    'inspection_tbl.userID',
+                    'inspection_tbl.propertyID',
+                    'inspection_tbl.inspectionDate',
+                    'inspection_tbl.updated_inspection_date',
+                    'inspection_tbl.inspectionType',
+                    'inspection_tbl.assigned_tsr',
+                    'inspection_tbl.inspection_status',
+                    'inspection_tbl.date_inspection_completed_canceled',
+                    'inspection_tbl.inspection_remarks',
+                    'inspection_tbl.comment',
+                    'inspection_tbl.follow_up_stage',
+                    'inspection_tbl.customer_inspec_feedback',
+                    'inspection_tbl.cx_feedback_details',
+                    'inspection_tbl.platform',
+                    'inspection_tbl.dateOfEntry',
+                    'property_tbl.propertyTitle'
+                )
+                ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfMonth)
+                ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfMonth)
+                ->orderBy('inspection_tbl.inspectionDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Inspections for this month retrieved successfully',
+                'data' => $inspections,
+                'count' => $inspections->count(),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving inspections for this month',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get inspections scheduled for this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            $inspections = DB::table('inspection_tbl')
+                ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'inspection_tbl.id',
+                    'inspection_tbl.inspectionID',
+                    'inspection_tbl.userID',
+                    'inspection_tbl.propertyID',
+                    'inspection_tbl.inspectionDate',
+                    'inspection_tbl.updated_inspection_date',
+                    'inspection_tbl.inspectionType',
+                    'inspection_tbl.assigned_tsr',
+                    'inspection_tbl.inspection_status',
+                    'inspection_tbl.date_inspection_completed_canceled',
+                    'inspection_tbl.inspection_remarks',
+                    'inspection_tbl.comment',
+                    'inspection_tbl.follow_up_stage',
+                    'inspection_tbl.customer_inspec_feedback',
+                    'inspection_tbl.cx_feedback_details',
+                    'inspection_tbl.platform',
+                    'inspection_tbl.dateOfEntry',
+                    'property_tbl.propertyTitle'
+                )
+                ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfYear)
+                ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfYear)
+                ->orderBy('inspection_tbl.inspectionDate', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Inspections for this year retrieved successfully',
+                'data' => $inspections,
+                'count' => $inspections->count(),
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving inspections for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
