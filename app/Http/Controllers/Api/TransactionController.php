@@ -562,4 +562,173 @@ class TransactionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get transactions from this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+
+            $transactions = DB::table('transaction_tbl')
+                ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'transaction_tbl.*',
+                    'user_tbl.firstName as user_firstName',
+                    'user_tbl.lastName as user_lastName',
+                    'user_tbl.email as user_email',
+                    'user_tbl.phone as user_phone',
+                    'user_tbl.user_type'
+                )
+                ->whereDate('transaction_tbl.transaction_date', '>=', $startOfWeek)
+                ->whereDate('transaction_tbl.transaction_date', '<=', $endOfWeek)
+                ->orderBy('transaction_tbl.transaction_date', 'desc')
+                ->get();
+
+            $weekStats = [
+                'total_transactions' => $transactions->count(),
+                'total_amount' => $transactions->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_amount' => $transactions->where('status', 'completed')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'pending_amount' => $transactions->where('status', 'pending')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_transactions' => $transactions->where('status', 'completed')->count(),
+                'pending_transactions' => $transactions->where('status', 'pending')->count(),
+                'failed_transactions' => $transactions->where('status', 'failed')->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transactions for this week retrieved successfully',
+                'data' => $transactions,
+                'count' => $transactions->count(),
+                'period' => [
+                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
+                    'end' => $endOfWeek->format('Y-m-d H:i:s')
+                ],
+                'week_statistics' => $weekStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving transactions for this week',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get transactions from this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            $transactions = DB::table('transaction_tbl')
+                ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'transaction_tbl.*',
+                    'user_tbl.firstName as user_firstName',
+                    'user_tbl.lastName as user_lastName',
+                    'user_tbl.email as user_email',
+                    'user_tbl.phone as user_phone',
+                    'user_tbl.user_type'
+                )
+                ->whereDate('transaction_tbl.transaction_date', '>=', $startOfMonth)
+                ->whereDate('transaction_tbl.transaction_date', '<=', $endOfMonth)
+                ->orderBy('transaction_tbl.transaction_date', 'desc')
+                ->get();
+
+            $monthStats = [
+                'total_transactions' => $transactions->count(),
+                'total_amount' => $transactions->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_amount' => $transactions->where('status', 'completed')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'pending_amount' => $transactions->where('status', 'pending')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_transactions' => $transactions->where('status', 'completed')->count(),
+                'pending_transactions' => $transactions->where('status', 'pending')->count(),
+                'failed_transactions' => $transactions->where('status', 'failed')->count(),
+                'average_transaction_amount' => $transactions->count() > 0 ? round($transactions->avg('amount'), 2) : 0
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transactions for this month retrieved successfully',
+                'data' => $transactions,
+                'count' => $transactions->count(),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ],
+                'month_statistics' => $monthStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving transactions for this month',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get transactions from this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            $transactions = DB::table('transaction_tbl')
+                ->leftJoin('user_tbl', DB::raw('CAST(transaction_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'transaction_tbl.*',
+                    'user_tbl.firstName as user_firstName',
+                    'user_tbl.lastName as user_lastName',
+                    'user_tbl.email as user_email',
+                    'user_tbl.phone as user_phone',
+                    'user_tbl.user_type'
+                )
+                ->whereDate('transaction_tbl.transaction_date', '>=', $startOfYear)
+                ->whereDate('transaction_tbl.transaction_date', '<=', $endOfYear)
+                ->orderBy('transaction_tbl.transaction_date', 'desc')
+                ->get();
+
+            $yearStats = [
+                'total_transactions' => $transactions->count(),
+                'total_amount' => $transactions->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_amount' => $transactions->where('status', 'completed')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'pending_amount' => $transactions->where('status', 'pending')->sum(function($t) { return is_numeric($t->amount) ? (float)$t->amount : 0; }),
+                'completed_transactions' => $transactions->where('status', 'completed')->count(),
+                'pending_transactions' => $transactions->where('status', 'pending')->count(),
+                'failed_transactions' => $transactions->where('status', 'failed')->count(),
+                'average_transaction_amount' => $transactions->count() > 0 ? round($transactions->avg('amount'), 2) : 0,
+                'highest_transaction_amount' => $transactions->max('amount') ?? 0,
+                'lowest_transaction_amount' => $transactions->min('amount') ?? 0
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transactions for this year retrieved successfully',
+                'data' => $transactions,
+                'count' => $transactions->count(),
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ],
+                'year_statistics' => $yearStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving transactions for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

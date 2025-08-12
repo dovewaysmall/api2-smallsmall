@@ -185,6 +185,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions/status/{status}', [TransactionController::class, 'getByStatus']);
     Route::get('/transactions/type/{type}', [TransactionController::class, 'getByType']);
     Route::get('/transactions/user/{userId}', [TransactionController::class, 'getByUser']);
+    Route::get('/transactions/this-week', [TransactionController::class, 'getThisWeek']);
+    Route::get('/transactions/this-month', [TransactionController::class, 'getThisMonth']);
+    Route::get('/transactions/this-year', [TransactionController::class, 'getThisYear']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::put('/transactions/{id}', [TransactionController::class, 'update']);
     
