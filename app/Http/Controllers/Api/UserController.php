@@ -41,8 +41,8 @@ class UserController extends Controller
      */
     public function monthlyCount()
     {
-        $count = User::whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
+        $count = User::whereMonth('regDate', now()->month)
+                    ->whereYear('regDate', now()->year)
                     ->count();
         
         return response()->json([
@@ -58,7 +58,7 @@ class UserController extends Controller
      */
     public function yearlyCount()
     {
-        $count = User::whereYear('created_at', now()->year)
+        $count = User::whereYear('regDate', now()->year)
                     ->count();
         
         return response()->json([
