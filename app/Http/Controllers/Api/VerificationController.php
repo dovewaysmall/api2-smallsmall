@@ -25,37 +25,7 @@ class VerificationController extends Controller
                     'user_tbl.email',
                     'user_tbl.phone',
                     'user_tbl.verified',
-                    'verifications.id as veriID',
-                    'verifications.employment_status',
-                    'verifications.verification_id',
-                    'verifications.created_at as verifications_date',
-                    'verifications.gross_annual_income',
-                    'verifications.marital_status',
-                    'verifications.present_address',
-                    'verifications.duration_present_address',
-                    'verifications.disability',
-                    'verifications.pets',
-                    'verifications.present_landlord',
-                    'verifications.landlord_email',
-                    'verifications.landlord_phone',
-                    'verifications.landlord_address',
-                    'verifications.dob',
-                    'verifications.occupation',
-                    'verifications.company_name',
-                    'verifications.company_address',
-                    'verifications.hr_manager_name',
-                    'verifications.hr_manager_email',
-                    'verifications.office_phone',
-                    'verifications.current_renting_status',
-                    'verifications.reason_for_living',
-                    'verifications.guarantor_name',
-                    'verifications.guarantor_email',
-                    'verifications.guarantor_phone',
-                    'verifications.guarantor_address',
-                    'verifications.guarantor_occupation',
-                    'verifications.verification_status',
-                    'verifications.verified_by',
-                    'verifications.verification_notes'
+                    'verifications.*'
                 )
                 ->orderBy('verifications.id', 'desc')
                 ->get();
@@ -216,21 +186,17 @@ class VerificationController extends Controller
     {
         try {
             $totalCount = DB::table('verifications')->count();
-            $pendingCount = DB::table('verifications')->where('verification_status', 'received')->count();
-            $processingCount = DB::table('verifications')->where('verification_status', 'processing')->count();
-            $approvedCount = DB::table('verifications')->where('verification_status', 'approved')->count();
-            $rejectedCount = DB::table('verifications')->where('verification_status', 'rejected')->count();
             $todayCount = DB::table('verifications')->whereDate('created_at', today())->count();
+            $thisWeekCount = DB::table('verifications')->whereDate('created_at', '>=', now()->startOfWeek())->count();
+            $thisMonthCount = DB::table('verifications')->whereDate('created_at', '>=', now()->startOfMonth())->count();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Verification count retrieved successfully',
                 'total_verifications' => $totalCount,
-                'pending_verifications' => $pendingCount,
-                'processing_verifications' => $processingCount,
-                'approved_verifications' => $approvedCount,
-                'rejected_verifications' => $rejectedCount,
-                'today_verifications' => $todayCount
+                'today_verifications' => $todayCount,
+                'this_week_verifications' => $thisWeekCount,
+                'this_month_verifications' => $thisMonthCount
             ]);
 
         } catch (\Exception $e) {
@@ -352,7 +318,6 @@ class VerificationController extends Controller
                     'user_tbl.verified',
                     'verifications.*'
                 )
-                ->where('verifications.verification_status', $status)
                 ->orderBy('verifications.created_at', 'desc')
                 ->get();
 
@@ -380,14 +345,6 @@ class VerificationController extends Controller
     {
         try {
             $totalVerifications = DB::table('verifications')->count();
-            $approvedRate = DB::table('verifications')
-                ->where('verification_status', 'approved')
-                ->count();
-            
-            $statusStats = DB::table('verifications')
-                ->select('verification_status', DB::raw('count(*) as count'))
-                ->groupBy('verification_status')
-                ->get();
 
             $employmentStats = DB::table('verifications')
                 ->select('employment_status', DB::raw('count(*) as count'))
@@ -407,16 +364,18 @@ class VerificationController extends Controller
                 ->get();
 
             $averageIncome = DB::table('verifications')
-                ->where('verification_status', 'approved')
                 ->avg('gross_annual_income');
+
+            $incomeRange = DB::table('verifications')
+                ->selectRaw('MIN(gross_annual_income) as min_income, MAX(gross_annual_income) as max_income')
+                ->first();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Verification statistics retrieved successfully',
                 'total_verifications' => $totalVerifications,
-                'approval_rate' => $totalVerifications > 0 ? round(($approvedRate / $totalVerifications) * 100, 2) : 0,
                 'average_income' => round($averageIncome ?? 0, 2),
-                'status_breakdown' => $statusStats,
+                'income_range' => $incomeRange,
                 'employment_breakdown' => $employmentStats,
                 'monthly_trends' => $monthlyStats
             ]);
