@@ -115,6 +115,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties/location', [PropertyController::class, 'getByLocation']);
     Route::get('/properties/status/{status}', [PropertyController::class, 'getByStatus']);
     Route::get('/properties/owner/{landlordId}', [PropertyController::class, 'getByOwner']);
+    Route::get('/properties/this-week', [PropertyController::class, 'getThisWeek']);
+    Route::get('/properties/this-month', [PropertyController::class, 'getThisMonth']);
+    Route::get('/properties/this-year', [PropertyController::class, 'getThisYear']);
     Route::get('/properties/{id}', [PropertyController::class, 'show']);
     Route::put('/properties/{id}', [PropertyController::class, 'update']);
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);

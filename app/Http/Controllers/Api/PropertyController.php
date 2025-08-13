@@ -636,4 +636,153 @@ class PropertyController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get properties created this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+
+            $properties = DB::table('property_tbl')
+                ->select('property_tbl.*')
+                ->whereDate('property_tbl.dateOfEntry', '>=', $startOfWeek)
+                ->whereDate('property_tbl.dateOfEntry', '<=', $endOfWeek)
+                ->orderBy('property_tbl.dateOfEntry', 'desc')
+                ->get();
+
+            $weekStats = [
+                'total_properties' => $properties->count(),
+                'available_properties' => $properties->where('status', 'available')->count(),
+                'rented_properties' => $properties->where('status', 'rented')->count(),
+                'pending_properties' => $properties->where('status', 'pending')->count(),
+                'average_price' => $properties->count() > 0 ? round($properties->avg('price'), 2) : 0,
+                'highest_price' => $properties->max('price') ?? 0,
+                'lowest_price' => $properties->min('price') ?? 0
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Properties for this week retrieved successfully',
+                'data' => $properties,
+                'count' => $properties->count(),
+                'period' => [
+                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
+                    'end' => $endOfWeek->format('Y-m-d H:i:s')
+                ],
+                'week_statistics' => $weekStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving properties for this week',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get properties created this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            $properties = DB::table('property_tbl')
+                ->select('property_tbl.*')
+                ->whereDate('property_tbl.dateOfEntry', '>=', $startOfMonth)
+                ->whereDate('property_tbl.dateOfEntry', '<=', $endOfMonth)
+                ->orderBy('property_tbl.dateOfEntry', 'desc')
+                ->get();
+
+            $monthStats = [
+                'total_properties' => $properties->count(),
+                'available_properties' => $properties->where('status', 'available')->count(),
+                'rented_properties' => $properties->where('status', 'rented')->count(),
+                'pending_properties' => $properties->where('status', 'pending')->count(),
+                'featured_properties' => $properties->where('featured_property', 1)->count(),
+                'average_price' => $properties->count() > 0 ? round($properties->avg('price'), 2) : 0,
+                'highest_price' => $properties->max('price') ?? 0,
+                'lowest_price' => $properties->min('price') ?? 0,
+                'property_types' => $properties->groupBy('propertyType')->map->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Properties for this month retrieved successfully',
+                'data' => $properties,
+                'count' => $properties->count(),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ],
+                'month_statistics' => $monthStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving properties for this month',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get properties created this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            $properties = DB::table('property_tbl')
+                ->select('property_tbl.*')
+                ->whereDate('property_tbl.dateOfEntry', '>=', $startOfYear)
+                ->whereDate('property_tbl.dateOfEntry', '<=', $endOfYear)
+                ->orderBy('property_tbl.dateOfEntry', 'desc')
+                ->get();
+
+            $yearStats = [
+                'total_properties' => $properties->count(),
+                'available_properties' => $properties->where('status', 'available')->count(),
+                'rented_properties' => $properties->where('status', 'rented')->count(),
+                'pending_properties' => $properties->where('status', 'pending')->count(),
+                'featured_properties' => $properties->where('featured_property', 1)->count(),
+                'average_price' => $properties->count() > 0 ? round($properties->avg('price'), 2) : 0,
+                'highest_price' => $properties->max('price') ?? 0,
+                'lowest_price' => $properties->min('price') ?? 0,
+                'property_types' => $properties->groupBy('propertyType')->map->count(),
+                'locations' => $properties->groupBy('city')->map->count(),
+                'monthly_breakdown' => $properties->groupBy(function($item) {
+                    return date('Y-m', strtotime($item->dateOfEntry));
+                })->map->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Properties for this year retrieved successfully',
+                'data' => $properties,
+                'count' => $properties->count(),
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ],
+                'year_statistics' => $yearStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving properties for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
