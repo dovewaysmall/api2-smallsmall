@@ -122,7 +122,7 @@ class InspectionController extends Controller
 
             // Get all available TSRs from admin_tbl
             $allTsrs = DB::table('admin_tbl')
-                ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'role', 'department', 'staff_dept', 'status')
+                ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'staff_dept', 'status')
                 ->where('staff_dept', 'tsr')
                 ->where('status', 'active')
                 ->orderBy('firstName', 'asc')
@@ -139,8 +139,7 @@ class InspectionController extends Controller
                     'lastName' => $tsr->lastName,
                     'email' => $tsr->email,
                     'phone' => $tsr->phone,
-                    'role' => $tsr->role,
-                    'department' => $tsr->department,
+                    'staff_dept' => $tsr->staff_dept,
                     'status' => $tsr->status,
                     'is_assigned' => $tsr->adminID == $inspection->assigned_tsr
                 ];
