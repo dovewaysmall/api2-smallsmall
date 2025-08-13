@@ -120,10 +120,49 @@ class InspectionController extends Controller
                 ], 404);
             }
 
+            // Get all available TSRs from admin_tbl
+            $allTsrs = DB::table('admin_tbl')
+                ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'role', 'department', 'staff_dept', 'status')
+                ->where('staff_dept', 'tsr')
+                ->where('status', 'active')
+                ->orderBy('firstName', 'asc')
+                ->get();
+
+            // Mark the currently assigned TSR and separate others
+            $assignedTsr = null;
+            $availableTsrs = [];
+
+            foreach ($allTsrs as $tsr) {
+                $tsrData = [
+                    'adminID' => $tsr->adminID,
+                    'firstName' => $tsr->firstName,
+                    'lastName' => $tsr->lastName,
+                    'email' => $tsr->email,
+                    'phone' => $tsr->phone,
+                    'role' => $tsr->role,
+                    'department' => $tsr->department,
+                    'status' => $tsr->status,
+                    'is_assigned' => $tsr->adminID == $inspection->assigned_tsr
+                ];
+
+                if ($tsr->adminID == $inspection->assigned_tsr) {
+                    $assignedTsr = $tsrData;
+                } else {
+                    $availableTsrs[] = $tsrData;
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspection retrieved successfully',
-                'data' => $inspection
+                'data' => $inspection,
+                'assigned_tsr' => $assignedTsr,
+                'available_tsrs' => $availableTsrs,
+                'tsr_summary' => [
+                    'total_available_tsrs' => count($allTsrs),
+                    'has_assigned_tsr' => !is_null($assignedTsr),
+                    'unassigned_tsrs_count' => count($availableTsrs)
+                ]
             ]);
 
         } catch (\Exception $e) {
