@@ -548,6 +548,167 @@ class VerificationController extends Controller
     }
 
     /**
+     * Get verifications created this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+
+            $verifications = DB::table('verifications')
+                ->join('user_tbl', 'verifications.user_id', '=', 'user_tbl.userID')
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'verifications.*'
+                )
+                ->whereDate('verifications.created_at', '>=', $startOfWeek)
+                ->whereDate('verifications.created_at', '<=', $endOfWeek)
+                ->orderBy('verifications.created_at', 'desc')
+                ->get();
+
+            $weekStats = [
+                'total_verifications' => $verifications->count(),
+                'average_income' => $verifications->count() > 0 ? round($verifications->avg('gross_annual_income'), 2) : 0,
+                'employment_breakdown' => $verifications->groupBy('employment_status')->map->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verifications for this week retrieved successfully',
+                'data' => $verifications,
+                'count' => $verifications->count(),
+                'period' => [
+                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
+                    'end' => $endOfWeek->format('Y-m-d H:i:s')
+                ],
+                'week_statistics' => $weekStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving verifications for this week',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get verifications created this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            $verifications = DB::table('verifications')
+                ->join('user_tbl', 'verifications.user_id', '=', 'user_tbl.userID')
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'verifications.*'
+                )
+                ->whereDate('verifications.created_at', '>=', $startOfMonth)
+                ->whereDate('verifications.created_at', '<=', $endOfMonth)
+                ->orderBy('verifications.created_at', 'desc')
+                ->get();
+
+            $monthStats = [
+                'total_verifications' => $verifications->count(),
+                'average_income' => $verifications->count() > 0 ? round($verifications->avg('gross_annual_income'), 2) : 0,
+                'employment_breakdown' => $verifications->groupBy('employment_status')->map->count(),
+                'marital_status_breakdown' => $verifications->groupBy('marital_status')->map->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verifications for this month retrieved successfully',
+                'data' => $verifications,
+                'count' => $verifications->count(),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ],
+                'month_statistics' => $monthStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving verifications for this month',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get verifications created this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            $verifications = DB::table('verifications')
+                ->join('user_tbl', 'verifications.user_id', '=', 'user_tbl.userID')
+                ->select(
+                    'user_tbl.firstName',
+                    'user_tbl.lastName', 
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'verifications.*'
+                )
+                ->whereDate('verifications.created_at', '>=', $startOfYear)
+                ->whereDate('verifications.created_at', '<=', $endOfYear)
+                ->orderBy('verifications.created_at', 'desc')
+                ->get();
+
+            $yearStats = [
+                'total_verifications' => $verifications->count(),
+                'average_income' => $verifications->count() > 0 ? round($verifications->avg('gross_annual_income'), 2) : 0,
+                'highest_income' => $verifications->max('gross_annual_income') ?? 0,
+                'lowest_income' => $verifications->min('gross_annual_income') ?? 0,
+                'employment_breakdown' => $verifications->groupBy('employment_status')->map->count(),
+                'marital_status_breakdown' => $verifications->groupBy('marital_status')->map->count(),
+                'monthly_breakdown' => $verifications->groupBy(function($item) {
+                    return date('Y-m', strtotime($item->created_at));
+                })->map->count(),
+                'company_diversity' => $verifications->where('company_name', '!=', '')->groupBy('company_name')->map->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verifications for this year retrieved successfully',
+                'data' => $verifications,
+                'count' => $verifications->count(),
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ],
+                'year_statistics' => $yearStats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving verifications for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Generate email template (Based on your original template).
      */
     private function generateEmailTemplate($firstName, $statusText, $bodyMessage, $additionalInfo = '')

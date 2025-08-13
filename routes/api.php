@@ -204,6 +204,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/verifications/stats', [VerificationController::class, 'getStats']);
     Route::get('/verifications/search', [VerificationController::class, 'search']);
     Route::get('/verifications/status/{status}', [VerificationController::class, 'getByStatus']);
+    Route::get('/verifications/this-week', [VerificationController::class, 'getThisWeek']);
+    Route::get('/verifications/this-month', [VerificationController::class, 'getThisMonth']);
+    Route::get('/verifications/this-year', [VerificationController::class, 'getThisYear']);
     Route::post('/verifications/update-status', [VerificationController::class, 'updateStatus']);
     Route::get('/verifications/{id}', [VerificationController::class, 'show']);
     
