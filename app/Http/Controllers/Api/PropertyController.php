@@ -17,7 +17,7 @@ class PropertyController extends Controller
     {
         try {
             $properties = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select(
                     'property_tbl.*',
                     'user_tbl.firstName as landlord_firstName',
@@ -51,7 +51,7 @@ class PropertyController extends Controller
     {
         try {
             $property = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select(
                     'property_tbl.*',
                     'user_tbl.firstName as landlord_firstName',
@@ -208,7 +208,7 @@ class PropertyController extends Controller
             if ($propertyId) {
                 // Retrieve the created property with landlord details
                 $createdProperty = DB::table('property_tbl')
-                    ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                    ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                     ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                     ->where('property_tbl.id', $propertyId)
                     ->first();
@@ -287,7 +287,7 @@ class PropertyController extends Controller
             DB::table('property_tbl')->where('id', $id)->update($updateData);
             
             $updatedProperty = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->where('property_tbl.id', $id)
                 ->first();
@@ -350,9 +350,9 @@ class PropertyController extends Controller
     {
         try {
             $properties = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
-                ->where('property_tbl.landlordID', $landlordId)
+                ->where('property_tbl.userID', $landlordId)
                 ->orderBy('property_tbl.dateOfEntry', 'desc')
                 ->get();
 
@@ -401,7 +401,7 @@ class PropertyController extends Controller
 
         try {
             $properties = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->where('property_tbl.status', $status)
                 ->orderBy('property_tbl.dateOfEntry', 'desc')
@@ -444,7 +444,7 @@ class PropertyController extends Controller
 
         try {
             $query = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName');
 
             if ($request->city) {
@@ -504,7 +504,7 @@ class PropertyController extends Controller
             $query = $request->input('query');
             
             $properties = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->where(function($q) use ($query) {
                     $q->where('property_tbl.propertyTitle', 'LIKE', "%{$query}%")
@@ -558,7 +558,7 @@ class PropertyController extends Controller
     {
         try {
             $properties = DB::table('property_tbl')
-                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.landlordID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('user_tbl', DB::raw('CAST(property_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->select('property_tbl.*', 'user_tbl.firstName', 'user_tbl.lastName')
                 ->where('property_tbl.featured_property', 1)
                 ->where('property_tbl.status', 'available')

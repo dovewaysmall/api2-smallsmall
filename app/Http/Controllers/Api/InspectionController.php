@@ -10,6 +10,52 @@ use Illuminate\Support\Facades\Validator;
 class InspectionController extends Controller
 {
     /**
+     * Get TSR management data for inspection responses.
+     */
+    private function getTsrManagementData($assignedTsrId = null)
+    {
+        // Get all available TSRs from admin_tbl
+        $allTsrs = DB::table('admin_tbl')
+            ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'staff_dept', 'status')
+            ->where('staff_dept', 'tsr')
+            ->where('status', 'active')
+            ->orderBy('firstName', 'asc')
+            ->get();
+
+        // Mark the currently assigned TSR and separate others
+        $assignedTsr = null;
+        $availableTsrs = [];
+
+        foreach ($allTsrs as $tsr) {
+            $tsrData = [
+                'adminID' => $tsr->adminID,
+                'firstName' => $tsr->firstName,
+                'lastName' => $tsr->lastName,
+                'email' => $tsr->email,
+                'phone' => $tsr->phone,
+                'staff_dept' => $tsr->staff_dept,
+                'status' => $tsr->status,
+                'is_assigned' => $tsr->adminID == $assignedTsrId
+            ];
+
+            if ($tsr->adminID == $assignedTsrId) {
+                $assignedTsr = $tsrData;
+            } else {
+                $availableTsrs[] = $tsrData;
+            }
+        }
+
+        return [
+            'assigned_tsr' => $assignedTsr,
+            'available_tsrs' => $availableTsrs,
+            'tsr_summary' => [
+                'total_available_tsrs' => count($allTsrs),
+                'has_assigned_tsr' => !is_null($assignedTsr),
+                'unassigned_tsrs_count' => count($availableTsrs)
+            ]
+        ];
+    }
+    /**
      * Display a listing of all inspections (Improved version of your original).
      */
     public function index()
@@ -53,11 +99,17 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.id', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections retrieved successfully',
                 'data' => $inspections,
-                'count' => $inspections->count()
+                'count' => $inspections->count(),
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -120,48 +172,16 @@ class InspectionController extends Controller
                 ], 404);
             }
 
-            // Get all available TSRs from admin_tbl
-            $allTsrs = DB::table('admin_tbl')
-                ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'staff_dept', 'status')
-                ->where('staff_dept', 'tsr')
-                ->where('status', 'active')
-                ->orderBy('firstName', 'asc')
-                ->get();
-
-            // Mark the currently assigned TSR and separate others
-            $assignedTsr = null;
-            $availableTsrs = [];
-
-            foreach ($allTsrs as $tsr) {
-                $tsrData = [
-                    'adminID' => $tsr->adminID,
-                    'firstName' => $tsr->firstName,
-                    'lastName' => $tsr->lastName,
-                    'email' => $tsr->email,
-                    'phone' => $tsr->phone,
-                    'staff_dept' => $tsr->staff_dept,
-                    'status' => $tsr->status,
-                    'is_assigned' => $tsr->adminID == $inspection->assigned_tsr
-                ];
-
-                if ($tsr->adminID == $inspection->assigned_tsr) {
-                    $assignedTsr = $tsrData;
-                } else {
-                    $availableTsrs[] = $tsrData;
-                }
-            }
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData($inspection->assigned_tsr);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Inspection retrieved successfully',
                 'data' => $inspection,
-                'assigned_tsr' => $assignedTsr,
-                'available_tsrs' => $availableTsrs,
-                'tsr_summary' => [
-                    'total_available_tsrs' => count($allTsrs),
-                    'has_assigned_tsr' => !is_null($assignedTsr),
-                    'unassigned_tsrs_count' => count($availableTsrs)
-                ]
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -352,12 +372,18 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.id', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections retrieved successfully',
                 'data' => $inspections,
                 'count' => $inspections->count(),
-                'status' => $status
+                'status' => $status,
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -400,12 +426,18 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections retrieved successfully',
                 'data' => $inspections,
                 'count' => $inspections->count(),
-                'inspection_type' => $type
+                'inspection_type' => $type,
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -445,12 +477,18 @@ class InspectionController extends Controller
                 ]);
             }
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'User inspections retrieved successfully',
                 'data' => $inspections,
                 'count' => $inspections->count(),
-                'userID' => $userID
+                'userID' => $userID,
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -593,6 +631,9 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections retrieved successfully',
@@ -601,7 +642,10 @@ class InspectionController extends Controller
                 'date_range' => [
                     'start' => $request->start_date,
                     'end' => $request->end_date
-                ]
+                ],
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -658,6 +702,9 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections for this week retrieved successfully',
@@ -666,7 +713,10 @@ class InspectionController extends Controller
                 'period' => [
                     'start' => $startOfWeek->format('Y-m-d H:i:s'),
                     'end' => $endOfWeek->format('Y-m-d H:i:s')
-                ]
+                ],
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -723,6 +773,9 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections for this month retrieved successfully',
@@ -731,7 +784,10 @@ class InspectionController extends Controller
                 'period' => [
                     'start' => $startOfMonth->format('Y-m-d H:i:s'),
                     'end' => $endOfMonth->format('Y-m-d H:i:s')
-                ]
+                ],
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
@@ -788,6 +844,9 @@ class InspectionController extends Controller
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
                 ->get();
 
+            // Get TSR management data
+            $tsrData = $this->getTsrManagementData();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspections for this year retrieved successfully',
@@ -796,7 +855,10 @@ class InspectionController extends Controller
                 'period' => [
                     'start' => $startOfYear->format('Y-m-d H:i:s'),
                     'end' => $endOfYear->format('Y-m-d H:i:s')
-                ]
+                ],
+                'assigned_tsr' => $tsrData['assigned_tsr'],
+                'available_tsrs' => $tsrData['available_tsrs'],
+                'tsr_summary' => $tsrData['tsr_summary']
             ]);
 
         } catch (\Exception $e) {
