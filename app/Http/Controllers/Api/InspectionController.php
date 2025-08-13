@@ -18,6 +18,7 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     // User information
                     'user_tbl.firstName',
@@ -44,7 +45,10 @@ class InspectionController extends Controller
                     'inspection_tbl.platform',
                     'inspection_tbl.dateOfEntry',
                     // Property information
-                    'property_tbl.propertyTitle'
+                    'property_tbl.propertyTitle',
+                    // TSR information
+                    'admin_tbl.firstName as tsr_firstName',
+                    'admin_tbl.lastName as tsr_lastName'
                 )
                 ->orderBy('inspection_tbl.id', 'desc')
                 ->get();
@@ -74,6 +78,7 @@ class InspectionController extends Controller
             $inspection = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     // User information
                     'user_tbl.firstName',
@@ -100,7 +105,10 @@ class InspectionController extends Controller
                     'inspection_tbl.platform',
                     'inspection_tbl.dateOfEntry',
                     // Property information
-                    'property_tbl.propertyTitle'
+                    'property_tbl.propertyTitle',
+                    // TSR information
+                    'admin_tbl.firstName as tsr_firstName',
+                    'admin_tbl.lastName as tsr_lastName'
                 )
                 ->where('inspection_tbl.id', $id)
                 ->first();
@@ -296,9 +304,11 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email', 'user_tbl.phone',
-                    'inspection_tbl.*', 'property_tbl.propertyTitle'
+                    'inspection_tbl.*', 'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName', 'admin_tbl.lastName as tsr_lastName'
                 )
                 ->where('inspection_tbl.inspection_status', $status)
                 ->orderBy('inspection_tbl.id', 'desc')
@@ -342,9 +352,11 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email',
-                    'inspection_tbl.*', 'property_tbl.propertyTitle'
+                    'inspection_tbl.*', 'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName', 'admin_tbl.lastName as tsr_lastName'
                 )
                 ->where('inspection_tbl.inspectionType', $type)
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
@@ -376,9 +388,11 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email',
-                    'inspection_tbl.*', 'property_tbl.propertyTitle'
+                    'inspection_tbl.*', 'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName', 'admin_tbl.lastName as tsr_lastName'
                 )
                 ->where('inspection_tbl.userID', $userID)
                 ->orderBy('inspection_tbl.inspectionDate', 'desc')
@@ -530,9 +544,11 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email',
-                    'inspection_tbl.*', 'property_tbl.propertyTitle'
+                    'inspection_tbl.*', 'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName', 'admin_tbl.lastName as tsr_lastName'
                 )
                 ->whereDate('inspection_tbl.inspectionDate', '>=', $request->start_date)
                 ->whereDate('inspection_tbl.inspectionDate', '<=', $request->end_date)
@@ -571,6 +587,7 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName',
                     'user_tbl.lastName', 
@@ -594,7 +611,9 @@ class InspectionController extends Controller
                     'inspection_tbl.cx_feedback_details',
                     'inspection_tbl.platform',
                     'inspection_tbl.dateOfEntry',
-                    'property_tbl.propertyTitle'
+                    'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName',
+                    'admin_tbl.lastName as tsr_lastName'
                 )
                 ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfWeek)
                 ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfWeek)
@@ -633,6 +652,7 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName',
                     'user_tbl.lastName', 
@@ -656,7 +676,9 @@ class InspectionController extends Controller
                     'inspection_tbl.cx_feedback_details',
                     'inspection_tbl.platform',
                     'inspection_tbl.dateOfEntry',
-                    'property_tbl.propertyTitle'
+                    'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName',
+                    'admin_tbl.lastName as tsr_lastName'
                 )
                 ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfMonth)
                 ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfMonth)
@@ -695,6 +717,7 @@ class InspectionController extends Controller
             $inspections = DB::table('inspection_tbl')
                 ->join('user_tbl', DB::raw('CAST(inspection_tbl.userID AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->join('property_tbl', DB::raw('CAST(inspection_tbl.propertyID AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('admin_tbl', DB::raw('CAST(inspection_tbl.assigned_tsr AS CHAR)'), '=', DB::raw('CAST(admin_tbl.adminID AS CHAR)'))
                 ->select(
                     'user_tbl.firstName',
                     'user_tbl.lastName', 
@@ -718,7 +741,9 @@ class InspectionController extends Controller
                     'inspection_tbl.cx_feedback_details',
                     'inspection_tbl.platform',
                     'inspection_tbl.dateOfEntry',
-                    'property_tbl.propertyTitle'
+                    'property_tbl.propertyTitle',
+                    'admin_tbl.firstName as tsr_firstName',
+                    'admin_tbl.lastName as tsr_lastName'
                 )
                 ->whereDate('inspection_tbl.inspectionDate', '>=', $startOfYear)
                 ->whereDate('inspection_tbl.inspectionDate', '<=', $endOfYear)
