@@ -274,37 +274,76 @@ class InspectionController extends Controller
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
+        // Custom validation to handle ENUM fields more gracefully
+        $rules = [
             'inspectionDate' => 'sometimes|date',
-            'updated_inspection_date' => 'sometimes|date',
+            'updated_inspection_date' => 'sometimes|nullable|date',
             'inspectionType' => 'sometimes|in:Physical,Virtual,Remote',
-            'assigned_tsr' => 'nullable|string|max:10',
-            'inspection_status' => 'nullable|in:pending-not-assigned,pending-assigned,completed,canceled,apartment-not-available,multiple-bookings,did-not-show-up',
-            'date_inspection_completed_canceled' => 'nullable|date',
-            'inspection_remarks' => 'nullable|in:interested,uninterested,indecisive,rescheduled',
-            'comment' => 'nullable|string',
-            'follow_up_stage' => 'nullable|string|max:100',
-            'customer_inspec_feedback' => 'nullable|string',
-            'cx_feedback_details' => 'nullable|string',
-            'platform' => 'nullable|string|max:50',
-        ]);
+            'assigned_tsr' => 'sometimes|nullable|string|max:10',
+            'date_inspection_completed_canceled' => 'sometimes|nullable|date',
+            'comment' => 'sometimes|nullable|string',
+            'follow_up_stage' => 'sometimes|nullable|string|max:100',
+            'customer_inspec_feedback' => 'sometimes|nullable|string',
+            'cx_feedback_details' => 'sometimes|nullable|string',
+            'platform' => 'sometimes|nullable|string|max:50',
+        ];
+
+        // Add conditional validation for ENUM fields
+        if ($request->has('inspection_status') && !empty($request->inspection_status)) {
+            $rules['inspection_status'] = 'in:pending-not-assigned,pending-assigned,completed,canceled,apartment-not-available,multiple-bookings,did-not-show-up';
+        }
+
+        if ($request->has('inspection_remarks') && !empty($request->inspection_remarks)) {
+            $rules['inspection_remarks'] = 'in:interested,uninterested,indecisive,rescheduled';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+            Log::warning('Inspection update validation failed', [
+                'inspection_id' => $id,
+                'validation_errors' => $validator->errors()->toArray(),
+                'request_data' => $request->all()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'message' => 'Validation error. Please check the field values.',
+                'errors' => $validator->errors(),
+                'valid_inspection_status_values' => [
+                    'pending-not-assigned', 'pending-assigned', 'completed', 
+                    'canceled', 'apartment-not-available', 'multiple-bookings', 
+                    'did-not-show-up'
+                ],
+                'valid_inspection_remarks_values' => [
+                    'interested', 'uninterested', 'indecisive', 'rescheduled'
+                ]
             ], 422);
         }
 
         try {
-            // Filter out empty values to prevent database constraint issues
-            $updateData = array_filter($request->only([
+            // Build update data more carefully to handle ENUM fields
+            $updateData = [];
+            $allowedFields = [
                 'inspectionDate', 'updated_inspection_date', 'inspectionType', 
                 'assigned_tsr', 'inspection_status', 'date_inspection_completed_canceled',
                 'inspection_remarks', 'comment', 'follow_up_stage', 
                 'customer_inspec_feedback', 'cx_feedback_details', 'platform'
-            ]), fn($value) => $value !== null && $value !== '');
+            ];
+
+            foreach ($allowedFields as $field) {
+                if ($request->has($field)) {
+                    $value = $request->input($field);
+                    
+                    // Only include non-empty values or explicitly null values
+                    if ($value !== null && $value !== '') {
+                        $updateData[$field] = $value;
+                    } elseif ($value === null && in_array($field, ['updated_inspection_date', 'assigned_tsr', 'inspection_status', 'date_inspection_completed_canceled', 'inspection_remarks', 'comment', 'follow_up_stage', 'customer_inspec_feedback', 'cx_feedback_details', 'platform'])) {
+                        // Allow setting nullable fields to NULL
+                        $updateData[$field] = null;
+                    }
+                }
+            }
 
             // Log the update attempt for debugging
             Log::info('Attempting to update inspection', [
