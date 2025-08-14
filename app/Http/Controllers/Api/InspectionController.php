@@ -201,18 +201,18 @@ class InspectionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'inspectionID' => 'required|string|max:255',
-            'propertyID' => 'required|string|max:255',
-            'userID' => 'required|string|max:255',
+            'propertyID' => 'required|string|max:20',
+            'userID' => 'required|string|max:20',
             'inspectionDate' => 'required|date',
             'inspectionType' => 'required|in:Physical,Virtual,Remote',
-            'assigned_tsr' => 'nullable|string|max:255',
-            'inspection_status' => 'nullable|string|max:100',
-            'inspection_remarks' => 'nullable|string|max:1000',
-            'comment' => 'nullable|string|max:1000',
-            'follow_up_stage' => 'nullable|string|max:255',
-            'customer_inspec_feedback' => 'nullable|string|max:1000',
-            'cx_feedback_details' => 'nullable|string|max:1000',
-            'platform' => 'nullable|string|max:100',
+            'assigned_tsr' => 'nullable|string|max:10',
+            'inspection_status' => 'nullable|in:pending-not-assigned,pending-assigned,completed,canceled,apartment-not-available,multiple-bookings,did-not-show-up',
+            'inspection_remarks' => 'nullable|in:interested,uninterested,indecisive,rescheduled',
+            'comment' => 'nullable|string',
+            'follow_up_stage' => 'nullable|string|max:100',
+            'customer_inspec_feedback' => 'nullable|string',
+            'cx_feedback_details' => 'nullable|string',
+            'platform' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -278,15 +278,15 @@ class InspectionController extends Controller
             'inspectionDate' => 'sometimes|date',
             'updated_inspection_date' => 'sometimes|date',
             'inspectionType' => 'sometimes|in:Physical,Virtual,Remote',
-            'assigned_tsr' => 'nullable|string|max:255',
-            'inspection_status' => 'nullable|string|max:100',
+            'assigned_tsr' => 'nullable|string|max:10',
+            'inspection_status' => 'nullable|in:pending-not-assigned,pending-assigned,completed,canceled,apartment-not-available,multiple-bookings,did-not-show-up',
             'date_inspection_completed_canceled' => 'nullable|date',
-            'inspection_remarks' => 'nullable|string|max:1000',
-            'comment' => 'nullable|string|max:1000',
-            'follow_up_stage' => 'nullable|string|max:255',
-            'customer_inspec_feedback' => 'nullable|string|max:1000',
-            'cx_feedback_details' => 'nullable|string|max:1000',
-            'platform' => 'nullable|string|max:100',
+            'inspection_remarks' => 'nullable|in:interested,uninterested,indecisive,rescheduled',
+            'comment' => 'nullable|string',
+            'follow_up_stage' => 'nullable|string|max:100',
+            'customer_inspec_feedback' => 'nullable|string',
+            'cx_feedback_details' => 'nullable|string',
+            'platform' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
