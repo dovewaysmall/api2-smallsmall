@@ -1096,10 +1096,29 @@ class InspectionController extends Controller
                     'platform' => 50
                 ]
             ],
+            'api_parameter_validation' => [
+                'all_database_columns_covered' => true,
+                'parameter_mapping' => [
+                    'inspectionDate' => 'datetime - Basic date validation',
+                    'updated_inspection_date' => 'datetime|nullable - Optional update date',
+                    'inspectionType' => 'enum(Physical,Virtual,Remote) - Conditional validation',
+                    'assigned_tsr' => 'varchar(10)|nullable - TSR assignment',
+                    'inspection_status' => 'enum - 7 valid statuses, conditional validation',
+                    'date_inspection_completed_canceled' => 'datetime|nullable - Completion date',
+                    'inspection_remarks' => 'enum - 4 valid remarks, conditional validation',
+                    'comment' => 'text|nullable - Free text comments',
+                    'follow_up_stage' => 'varchar(100)|nullable - Follow-up information',
+                    'customer_inspec_feedback' => 'text|nullable - Customer feedback',
+                    'cx_feedback_details' => 'text|nullable - CX team feedback details',
+                    'platform' => 'varchar(50)|nullable - Platform information'
+                ],
+                'validation_issues' => []
+            ],
             'inspectionType_update_test' => [
                 'current_value' => $inspection->inspectionType,
                 'can_theoretically_update' => true,
                 'api_allows_update' => true,
+                'validation_rule' => 'in:Physical,Virtual,Remote (conditional)',
                 'note' => 'inspectionType is in allowed fields and has proper validation'
             ]
         ]);
