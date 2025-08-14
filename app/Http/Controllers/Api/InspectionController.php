@@ -1056,10 +1056,30 @@ class InspectionController extends Controller
             return response()->json(['error' => 'Inspection not found'], 404);
         }
 
+        // Analyze potential restrictions
+        $restrictions = [];
+        
+        // Check if inspection is completed
+        if ($inspection->inspection_status === 'completed') {
+            $restrictions[] = 'Inspection is completed - typically restricts type changes';
+        }
+        
+        // Check if inspection date is in the past
+        $inspectionDate = strtotime($inspection->inspectionDate);
+        if ($inspectionDate < strtotime('today')) {
+            $restrictions[] = 'Inspection date is in the past - may restrict changes';
+        }
+        
+        // Check if TSR is assigned
+        if (!empty($inspection->assigned_tsr)) {
+            $restrictions[] = 'TSR is assigned - may restrict type changes';
+        }
+
         return response()->json([
             'inspection_id' => $id,
             'current_inspection' => $inspection,
             'request_data' => $request->all(),
+            'potential_restrictions' => $restrictions,
             'validation_info' => [
                 'valid_inspection_status_values' => [
                     'pending-not-assigned', 'pending-assigned', 'completed', 
@@ -1075,6 +1095,12 @@ class InspectionController extends Controller
                     'follow_up_stage' => 100,
                     'platform' => 50
                 ]
+            ],
+            'inspectionType_update_test' => [
+                'current_value' => $inspection->inspectionType,
+                'can_theoretically_update' => true,
+                'api_allows_update' => true,
+                'note' => 'inspectionType is in allowed fields and has proper validation'
             ]
         ]);
     }
