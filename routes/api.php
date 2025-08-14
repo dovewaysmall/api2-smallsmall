@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/unconverted/this-week', [UserController::class, 'getUnconvertedThisWeek']);
     Route::get('/users/unconverted/this-month', [UserController::class, 'getUnconvertedThisMonth']);
     Route::get('/users/unconverted/this-year', [UserController::class, 'getUnconvertedThisYear']);
+    Route::get('/users/unconverted/{id}', [UserController::class, 'getUnconvertedUser']);
     Route::get('/users/conversion-rate/this-year', [UserController::class, 'getConversionRateThisYear']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     

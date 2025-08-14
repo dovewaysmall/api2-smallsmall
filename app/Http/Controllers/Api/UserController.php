@@ -441,4 +441,39 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get single unconverted user by ID.
+     */
+    public function getUnconvertedUser(string $id)
+    {
+        try {
+            $unconvertedUser = DB::table('user_tbl')
+                ->leftJoin('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->select('user_tbl.*')
+                ->where('user_tbl.userID', $id)
+                ->whereNull('bookings.userID')
+                ->first();
+
+            if (!$unconvertedUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unconverted user not found or user has bookings'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Unconverted user retrieved successfully',
+                'data' => $unconvertedUser
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving unconverted user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
