@@ -216,8 +216,6 @@ class VerificationController extends Controller
         $validator = Validator::make($request->all(), [
             'userID' => 'required|string|exists:user_tbl,userID',
             'verified' => 'required|in:yes,no,processing,received',
-            'verification_notes' => 'nullable|string|max:1000',
-            'verified_by' => 'nullable|string|exists:user_tbl,userID',
         ]);
 
         if ($validator->fails()) {
@@ -237,34 +235,18 @@ class VerificationController extends Controller
             // Update user verification status
             $updated = DB::table('user_tbl')->where('userID', $request->userID)->update($data);
 
-            // Update verification record if it exists
-            $verificationData = [
-                'verification_status' => $request->verified === 'yes' ? 'approved' : 
-                                       ($request->verified === 'no' ? 'rejected' : $request->verified),
-                'verification_notes' => $request->verification_notes,
-                'verified_by' => $request->verified_by,
-                'verified_at' => now()
-            ];
-
-            DB::table('verifications')
-                ->where('user_id', $request->userID)
-                ->update($verificationData);
-
             if ($updated) {
                 // Send email notification based on status
                 $this->sendVerificationEmail($request->userID, $request->verified);
 
                 // Get updated user info
                 $updatedUser = DB::table('user_tbl')
-                    ->leftJoin('verifications', 'user_tbl.userID', '=', 'verifications.user_id')
                     ->select(
                         'user_tbl.userID',
                         'user_tbl.firstName',
                         'user_tbl.lastName',
                         'user_tbl.email',
-                        'user_tbl.verified',
-                        'verifications.verification_status',
-                        'verifications.verification_notes'
+                        'user_tbl.verified'
                     )
                     ->where('user_tbl.userID', $request->userID)
                     ->first();
