@@ -224,8 +224,7 @@ class VerificationController extends Controller
 
         try {
             $data = [
-                'verified' => $request->verified,
-                'updated_at' => now()
+                'verified' => $request->verified
             ];
 
             // Update user verification status
