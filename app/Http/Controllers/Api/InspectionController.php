@@ -265,6 +265,9 @@ class InspectionController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        // Force log the request for debugging
+        error_log("INSPECTION UPDATE REQUEST - ID: $id, Data: " . json_encode($request->all()));
+        
         $inspection = DB::table('inspection_tbl')->where('id', $id)->first();
 
         if (!$inspection) {
@@ -300,6 +303,9 @@ class InspectionController extends Controller
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+            // Force log validation errors
+            error_log("VALIDATION FAILED - ID: $id, Errors: " . json_encode($validator->errors()->toArray()));
+            
             Log::warning('Inspection update validation failed', [
                 'inspection_id' => $id,
                 'validation_errors' => $validator->errors()->toArray(),
@@ -1021,5 +1027,39 @@ class InspectionController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Debug endpoint to show validation rules and test data.
+     */
+    public function debugUpdate(Request $request, string $id)
+    {
+        $inspection = DB::table('inspection_tbl')->where('id', $id)->first();
+        
+        if (!$inspection) {
+            return response()->json(['error' => 'Inspection not found'], 404);
+        }
+
+        return response()->json([
+            'inspection_id' => $id,
+            'current_inspection' => $inspection,
+            'request_data' => $request->all(),
+            'validation_info' => [
+                'valid_inspection_status_values' => [
+                    'pending-not-assigned', 'pending-assigned', 'completed', 
+                    'canceled', 'apartment-not-available', 'multiple-bookings', 
+                    'did-not-show-up'
+                ],
+                'valid_inspection_remarks_values' => [
+                    'interested', 'uninterested', 'indecisive', 'rescheduled'
+                ],
+                'valid_inspection_types' => ['Physical', 'Virtual', 'Remote'],
+                'max_lengths' => [
+                    'assigned_tsr' => 10,
+                    'follow_up_stage' => 100,
+                    'platform' => 50
+                ]
+            ]
+        ]);
     }
 }
