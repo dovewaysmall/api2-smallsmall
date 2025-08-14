@@ -400,9 +400,9 @@ class UserController extends Controller
                 ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
                 ->whereBetween('user_tbl.regDate', [$startOfYear, $endOfYear])
                 ->select(
-                    DB::raw('AVG(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as avg_days_to_convert'),
-                    DB::raw('MIN(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as fastest_conversion_days'),
-                    DB::raw('MAX(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as slowest_conversion_days')
+                    DB::raw('AVG(DATEDIFF(bookings.booked_on, user_tbl.regDate)) as avg_days_to_convert'),
+                    DB::raw('MIN(DATEDIFF(bookings.booked_on, user_tbl.regDate)) as fastest_conversion_days'),
+                    DB::raw('MAX(DATEDIFF(bookings.booked_on, user_tbl.regDate)) as slowest_conversion_days')
                 )
                 ->first();
 
