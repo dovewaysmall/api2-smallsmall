@@ -869,4 +869,81 @@ class InspectionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get count of pending inspections this month.
+     */
+    public function getPendingCountThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+
+            // Count pending inspections this month
+            $pendingCount = DB::table('inspection_tbl')
+                ->where('inspection_status', 'pending')
+                ->whereBetween('inspectionDate', [$startOfMonth, $endOfMonth])
+                ->count();
+
+            // Get additional statistics for this month
+            $totalInspectionsThisMonth = DB::table('inspection_tbl')
+                ->whereBetween('inspectionDate', [$startOfMonth, $endOfMonth])
+                ->count();
+
+            $completedCount = DB::table('inspection_tbl')
+                ->where('inspection_status', 'completed')
+                ->whereBetween('inspectionDate', [$startOfMonth, $endOfMonth])
+                ->count();
+
+            $canceledCount = DB::table('inspection_tbl')
+                ->where('inspection_status', 'canceled')
+                ->whereBetween('inspectionDate', [$startOfMonth, $endOfMonth])
+                ->count();
+
+            // Get status breakdown for this month
+            $statusBreakdown = DB::table('inspection_tbl')
+                ->select('inspection_status', DB::raw('count(*) as count'))
+                ->whereBetween('inspectionDate', [$startOfMonth, $endOfMonth])
+                ->whereNotNull('inspection_status')
+                ->groupBy('inspection_status')
+                ->get()
+                ->keyBy('inspection_status');
+
+            // Calculate pending percentage
+            $pendingPercentage = $totalInspectionsThisMonth > 0 ? 
+                round(($pendingCount / $totalInspectionsThisMonth) * 100, 2) : 0;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pending inspections count for this month retrieved successfully',
+                'month' => now()->format('F Y'),
+                'period' => [
+                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
+                    'end' => $endOfMonth->format('Y-m-d H:i:s')
+                ],
+                'pending_count' => $pendingCount,
+                'total_inspections_this_month' => $totalInspectionsThisMonth,
+                'pending_percentage' => $pendingPercentage,
+                'status_summary' => [
+                    'pending' => $pendingCount,
+                    'completed' => $completedCount,
+                    'canceled' => $canceledCount,
+                    'other' => $totalInspectionsThisMonth - ($pendingCount + $completedCount + $canceledCount)
+                ],
+                'detailed_status_breakdown' => $statusBreakdown,
+                'insights' => [
+                    'urgency_level' => $pendingPercentage >= 70 ? 'Critical' : ($pendingPercentage >= 40 ? 'High' : ($pendingPercentage >= 20 ? 'Medium' : 'Low')),
+                    'completion_rate' => $totalInspectionsThisMonth > 0 ? round(($completedCount / $totalInspectionsThisMonth) * 100, 2) : 0,
+                    'action_required' => $pendingCount > 0 ? "There are {$pendingCount} pending inspections requiring attention" : 'All inspections are up to date'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving pending inspections count',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

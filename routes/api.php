@@ -86,6 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inspections/this-week', [InspectionController::class, 'getThisWeek']);
     Route::get('/inspections/this-month', [InspectionController::class, 'getThisMonth']);
     Route::get('/inspections/this-year', [InspectionController::class, 'getThisYear']);
+    Route::get('/inspections/pending/count/this-month', [InspectionController::class, 'getPendingCountThisMonth']);
     Route::get('/inspections/{id}', [InspectionController::class, 'show']);
     Route::put('/inspections/{id}', [InspectionController::class, 'update']);
     Route::delete('/inspections/{id}', [InspectionController::class, 'destroy']);
