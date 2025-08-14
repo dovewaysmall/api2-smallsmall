@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class InspectionController extends Controller
@@ -297,27 +298,63 @@ class InspectionController extends Controller
         }
 
         try {
-            $updateData = $request->only([
+            // Filter out empty values to prevent database constraint issues
+            $updateData = array_filter($request->only([
                 'inspectionDate', 'updated_inspection_date', 'inspectionType', 
                 'assigned_tsr', 'inspection_status', 'date_inspection_completed_canceled',
                 'inspection_remarks', 'comment', 'follow_up_stage', 
                 'customer_inspec_feedback', 'cx_feedback_details', 'platform'
+            ]), fn($value) => $value !== null && $value !== '');
+
+            // Log the update attempt for debugging
+            Log::info('Attempting to update inspection', [
+                'inspection_id' => $id,
+                'update_data' => $updateData,
+                'request_data' => $request->all()
             ]);
 
-            DB::table('inspection_tbl')->where('id', $id)->update($updateData);
+            // Perform the update
+            $updateResult = DB::table('inspection_tbl')->where('id', $id)->update($updateData);
+            
+            // Log the result
+            Log::info('Inspection update result', [
+                'inspection_id' => $id,
+                'rows_affected' => $updateResult
+            ]);
+
+            // Fetch the updated inspection
             $updatedInspection = DB::table('inspection_tbl')->where('id', $id)->first();
+
+            if (!$updatedInspection) {
+                Log::error('Inspection not found after update', ['inspection_id' => $id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inspection updated but could not retrieve updated data'
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Inspection updated successfully',
-                'data' => $updatedInspection
+                'data' => $updatedInspection,
+                'rows_affected' => $updateResult
             ]);
 
         } catch (\Exception $e) {
+            // Enhanced error logging
+            Log::error('Inspection update failed', [
+                'inspection_id' => $id,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'stack_trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while updating inspection',
-                'error' => $e->getMessage()
+                'message' => 'Failed to update inspection. Please check the logs for details.',
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode()
             ], 500);
         }
     }
