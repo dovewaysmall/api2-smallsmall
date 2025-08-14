@@ -54,13 +54,9 @@ class VerificationController extends Controller
         try {
             $verification = DB::table('verifications')
                 ->join('user_tbl', 'verifications.user_id', '=', 'user_tbl.userID')
-                ->leftJoin('user_tbl as verifier', 'verifications.verified_by', '=', 'verifier.userID')
                 ->select(
                     'user_tbl.*',
-                    'verifications.*',
-                    'verifier.firstName as verifier_firstName',
-                    'verifier.lastName as verifier_lastName',
-                    'verifier.email as verifier_email'
+                    'verifications.*'
                 )
                 ->where('verifications.id', $id)
                 ->first();
