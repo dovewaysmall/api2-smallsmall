@@ -342,4 +342,103 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get conversion rate for this year - users who became tenants.
+     */
+    public function getConversionRateThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+
+            // Get total users registered this year
+            $totalUsersThisYear = DB::table('user_tbl')
+                ->whereBetween('regDate', [$startOfYear, $endOfYear])
+                ->count();
+
+            // Get converted users this year (users who made bookings)
+            $convertedUsersThisYear = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->whereBetween('user_tbl.regDate', [$startOfYear, $endOfYear])
+                ->distinct()
+                ->count('user_tbl.userID');
+
+            // Calculate conversion rate
+            $conversionRate = $totalUsersThisYear > 0 ? 
+                round(($convertedUsersThisYear / $totalUsersThisYear) * 100, 2) : 0;
+
+            // Get monthly breakdown
+            $monthlyBreakdown = [];
+            for ($month = 1; $month <= 12; $month++) {
+                $monthStart = now()->month($month)->startOfMonth();
+                $monthEnd = now()->month($month)->endOfMonth();
+                
+                $monthlyTotal = DB::table('user_tbl')
+                    ->whereBetween('regDate', [$monthStart, $monthEnd])
+                    ->count();
+                
+                $monthlyConverted = DB::table('user_tbl')
+                    ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                    ->whereBetween('user_tbl.regDate', [$monthStart, $monthEnd])
+                    ->distinct()
+                    ->count('user_tbl.userID');
+                
+                $monthlyRate = $monthlyTotal > 0 ? round(($monthlyConverted / $monthlyTotal) * 100, 2) : 0;
+                
+                $monthlyBreakdown[] = [
+                    'month' => $monthStart->format('F'),
+                    'month_number' => $month,
+                    'total_users' => $monthlyTotal,
+                    'converted_users' => $monthlyConverted,
+                    'conversion_rate' => $monthlyRate
+                ];
+            }
+
+            // Get conversion timing analysis
+            $conversionTiming = DB::table('user_tbl')
+                ->join('bookings', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(bookings.userID AS CHAR)'))
+                ->whereBetween('user_tbl.regDate', [$startOfYear, $endOfYear])
+                ->select(
+                    DB::raw('AVG(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as avg_days_to_convert'),
+                    DB::raw('MIN(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as fastest_conversion_days'),
+                    DB::raw('MAX(DATEDIFF(bookings.booking_date, user_tbl.regDate)) as slowest_conversion_days')
+                )
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Conversion rate for this year retrieved successfully',
+                'year' => now()->year,
+                'period' => [
+                    'start' => $startOfYear->format('Y-m-d H:i:s'),
+                    'end' => $endOfYear->format('Y-m-d H:i:s')
+                ],
+                'conversion_summary' => [
+                    'total_users_registered' => $totalUsersThisYear,
+                    'users_converted_to_tenants' => $convertedUsersThisYear,
+                    'unconverted_users' => $totalUsersThisYear - $convertedUsersThisYear,
+                    'conversion_rate_percentage' => $conversionRate
+                ],
+                'monthly_breakdown' => $monthlyBreakdown,
+                'conversion_timing' => [
+                    'average_days_to_convert' => $conversionTiming ? round($conversionTiming->avg_days_to_convert, 1) : 0,
+                    'fastest_conversion_days' => $conversionTiming ? $conversionTiming->fastest_conversion_days : 0,
+                    'slowest_conversion_days' => $conversionTiming ? $conversionTiming->slowest_conversion_days : 0
+                ],
+                'insights' => [
+                    'conversion_status' => $conversionRate >= 50 ? 'Excellent' : ($conversionRate >= 30 ? 'Good' : ($conversionRate >= 15 ? 'Average' : 'Needs Improvement')),
+                    'opportunity_value' => $totalUsersThisYear - $convertedUsersThisYear,
+                    'best_performing_month' => collect($monthlyBreakdown)->sortByDesc('conversion_rate')->first()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while calculating conversion rate',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
