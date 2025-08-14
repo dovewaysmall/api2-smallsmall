@@ -281,7 +281,6 @@ class InspectionController extends Controller
         $rules = [
             'inspectionDate' => 'sometimes|date',
             'updated_inspection_date' => 'sometimes|nullable|date',
-            'inspectionType' => 'sometimes|in:Physical,Virtual,Remote',
             'assigned_tsr' => 'sometimes|nullable|string|max:10',
             'date_inspection_completed_canceled' => 'sometimes|nullable|date',
             'comment' => 'sometimes|nullable|string',
@@ -290,6 +289,11 @@ class InspectionController extends Controller
             'cx_feedback_details' => 'sometimes|nullable|string',
             'platform' => 'sometimes|nullable|string|max:50',
         ];
+
+        // Add conditional validation for inspectionType
+        if ($request->has('inspectionType') && !empty($request->inspectionType)) {
+            $rules['inspectionType'] = 'in:Physical,Virtual,Remote';
+        }
 
         // Add conditional validation for ENUM fields
         if ($request->has('inspection_status') && !empty($request->inspection_status)) {
@@ -352,6 +356,8 @@ class InspectionController extends Controller
             }
 
             // Log the update attempt for debugging
+            error_log("UPDATE DATA PREPARED: " . json_encode($updateData));
+            
             Log::info('Attempting to update inspection', [
                 'inspection_id' => $id,
                 'update_data' => $updateData,
@@ -378,11 +384,21 @@ class InspectionController extends Controller
                 ], 500);
             }
 
+            $message = 'Inspection updated successfully';
+            if ($updateResult == 0) {
+                $message = 'Update completed successfully. Note: No changes were detected (data may already match the submitted values).';
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Inspection updated successfully',
+                'message' => $message,
                 'data' => $updatedInspection,
-                'rows_affected' => $updateResult
+                'rows_affected' => $updateResult,
+                'fields_processed' => array_keys($updateData),
+                'debug_info' => [
+                    'original_request' => $request->only(['inspectionType', 'inspection_status', 'inspection_remarks']),
+                    'update_data_sent_to_db' => $updateData
+                ]
             ]);
 
         } catch (\Exception $e) {
