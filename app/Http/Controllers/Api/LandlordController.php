@@ -490,7 +490,7 @@ class LandlordController extends Controller
             $startOfMonth = now()->startOfMonth();
             $endOfMonth = now()->endOfMonth();
 
-            // Get landlords created this month
+            // Get all landlords created this month
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
                 ->whereDate('regDate', '>=', $startOfMonth)
@@ -502,13 +502,12 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type',
-                    'regDate'
+                    'user_type'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
 
-            // Add property count for each landlord
+            // Loop through each landlord and count their properties using property_owner field
             $landlordsWithPropertyCount = $landlords->map(function ($landlord) {
                 $propertyCount = DB::table('property_tbl')
                     ->where('property_owner', $landlord->userID)
@@ -518,31 +517,17 @@ class LandlordController extends Controller
                 return $landlord;
             });
 
-            $monthStats = [
-                'total_landlords' => $landlordsWithPropertyCount->count(),
-                'verified_landlords' => $landlordsWithPropertyCount->where('verified', 1)->count(),
-                'unverified_landlords' => $landlordsWithPropertyCount->where('verified', 0)->count(),
-                'total_properties_owned' => $landlordsWithPropertyCount->sum('property_count'),
-                'average_properties_per_landlord' => $landlordsWithPropertyCount->count() > 0 ? 
-                    round($landlordsWithPropertyCount->sum('property_count') / $landlordsWithPropertyCount->count(), 2) : 0
-            ];
-
             return response()->json([
                 'success' => true,
-                'message' => 'Landlords for this month retrieved successfully',
+                'message' => 'Landlords retrieved successfully',
                 'data' => $landlordsWithPropertyCount,
-                'count' => $landlordsWithPropertyCount->count(),
-                'period' => [
-                    'start' => $startOfMonth->format('Y-m-d H:i:s'),
-                    'end' => $endOfMonth->format('Y-m-d H:i:s')
-                ],
-                'month_statistics' => $monthStats
+                'count' => $landlordsWithPropertyCount->count()
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving landlords for this month',
+                'message' => 'An error occurred while retrieving landlords',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -557,7 +542,7 @@ class LandlordController extends Controller
             $startOfYear = now()->startOfYear();
             $endOfYear = now()->endOfYear();
 
-            // Get landlords created this year
+            // Get all landlords created this year
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
                 ->whereDate('regDate', '>=', $startOfYear)
@@ -569,13 +554,12 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type',
-                    'regDate'
+                    'user_type'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
 
-            // Add property count for each landlord
+            // Loop through each landlord and count their properties using property_owner field
             $landlordsWithPropertyCount = $landlords->map(function ($landlord) {
                 $propertyCount = DB::table('property_tbl')
                     ->where('property_owner', $landlord->userID)
@@ -585,34 +569,17 @@ class LandlordController extends Controller
                 return $landlord;
             });
 
-            $yearStats = [
-                'total_landlords' => $landlordsWithPropertyCount->count(),
-                'verified_landlords' => $landlordsWithPropertyCount->where('verified', 1)->count(),
-                'unverified_landlords' => $landlordsWithPropertyCount->where('verified', 0)->count(),
-                'total_properties_owned' => $landlordsWithPropertyCount->sum('property_count'),
-                'average_properties_per_landlord' => $landlordsWithPropertyCount->count() > 0 ? 
-                    round($landlordsWithPropertyCount->sum('property_count') / $landlordsWithPropertyCount->count(), 2) : 0,
-                'monthly_breakdown' => $landlordsWithPropertyCount->groupBy(function($item) {
-                    return date('Y-m', strtotime($item->regDate));
-                })->map->count()
-            ];
-
             return response()->json([
                 'success' => true,
-                'message' => 'Landlords for this year retrieved successfully',
+                'message' => 'Landlords retrieved successfully',
                 'data' => $landlordsWithPropertyCount,
-                'count' => $landlordsWithPropertyCount->count(),
-                'period' => [
-                    'start' => $startOfYear->format('Y-m-d H:i:s'),
-                    'end' => $endOfYear->format('Y-m-d H:i:s')
-                ],
-                'year_statistics' => $yearStats
+                'count' => $landlordsWithPropertyCount->count()
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving landlords for this year',
+                'message' => 'An error occurred while retrieving landlords',
                 'error' => $e->getMessage()
             ], 500);
         }
