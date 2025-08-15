@@ -16,17 +16,28 @@ class LandlordController extends Controller
     {
         try {
             $landlords = DB::table('user_tbl')
-                ->where('user_type', 'landlord')
+                ->leftJoin('property_tbl', 'user_tbl.userID', '=', 'property_tbl.landlordID')
+                ->where('user_tbl.user_type', 'landlord')
                 ->select(
-                    'userID',
-                    'firstName', 
-                    'lastName',
-                    'email',
-                    'phone',
-                    'verified',
-                    'user_type'
+                    'user_tbl.userID',
+                    'user_tbl.firstName', 
+                    'user_tbl.lastName',
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'user_tbl.user_type',
+                    DB::raw('COUNT(property_tbl.propertyID) as property_count')
                 )
-                ->orderBy('userID', 'desc')
+                ->groupBy(
+                    'user_tbl.userID',
+                    'user_tbl.firstName',
+                    'user_tbl.lastName',
+                    'user_tbl.email',
+                    'user_tbl.phone',
+                    'user_tbl.verified',
+                    'user_tbl.user_type'
+                )
+                ->orderBy('user_tbl.userID', 'desc')
                 ->get();
 
             return response()->json([
