@@ -128,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties/this-year', [PropertyController::class, 'getThisYear']);
     Route::get('/properties/{id}', [PropertyController::class, 'show']);
     Route::put('/properties/{id}', [PropertyController::class, 'update']);
+    Route::put('/properties/{id}/assign-owner', [PropertyController::class, 'assignOwner']);
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
     
     Route::get('/repairs', [RepairController::class, 'index']);

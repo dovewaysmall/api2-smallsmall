@@ -109,6 +109,7 @@ class PropertyController extends Controller
             'country' => 'required|string|max:100',
             'zip' => 'nullable|string|max:20',
             'landlordID' => 'required|string|max:255',
+            'property_owner' => 'nullable|string|max:255',
             'renting_as' => 'nullable|string|in:landlord,agent',
             'furnishing' => 'nullable|string|in:furnished,unfurnished,semi-furnished',
             'paymentPlan' => 'nullable|string|max:100',
@@ -177,6 +178,7 @@ class PropertyController extends Controller
                 'country' => $request->country,
                 'zip' => $request->zip,
                 'landlordID' => $request->landlordID,
+                'property_owner' => $request->property_owner,
                 'status' => 'available',
                 'imageFolder' => $imageFolder,
                 'featuredImg' => $featuredImg,
@@ -250,6 +252,7 @@ class PropertyController extends Controller
             'furnishing' => 'nullable|string|in:furnished,unfurnished,semi-furnished',
             'featured_property' => 'nullable|boolean',
             'available_date' => 'nullable|date',
+            'property_owner' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -265,7 +268,8 @@ class PropertyController extends Controller
                 'propertyTitle', 'propertyDescription', 'propertyType', 'price', 
                 'serviceCharge', 'securityDeposit', 'bed', 'bath', 'toilet',
                 'address', 'city', 'state', 'status', 'furnishing', 
-                'featured_property', 'available_date', 'amenities', 'services'
+                'featured_property', 'available_date', 'amenities', 'services',
+                'property_owner'
             ]);
 
             DB::table('property_tbl')->where('id', $id)->update($updateData);
@@ -781,6 +785,57 @@ class PropertyController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving properties for this year',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign owner to a property.
+     */
+    public function assignOwner(Request $request, string $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'property_owner' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $property = DB::table('property_tbl')->where('id', $id)->first();
+            
+            if (!$property) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Property not found'
+                ], 404);
+            }
+
+            DB::table('property_tbl')
+                ->where('id', $id)
+                ->update(['property_owner' => $request->property_owner]);
+            
+            $updatedProperty = DB::table('property_tbl')
+                ->select('property_tbl.*')
+                ->where('property_tbl.id', $id)
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Property owner assigned successfully',
+                'data' => $updatedProperty
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while assigning property owner',
                 'error' => $e->getMessage()
             ], 500);
         }
