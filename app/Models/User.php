@@ -11,6 +11,9 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory;
 
     protected $table = 'user_tbl';
+    protected $primaryKey = 'userID';
+    public $incrementing = false;
+    protected $keyType = 'string';
     public $timestamps = false;
     
     protected $fillable = [
@@ -21,6 +24,7 @@ class User extends Authenticatable
         'password',
         'phone',
         'user_type',
+        'verified',
     ];
 
     protected $hidden = [

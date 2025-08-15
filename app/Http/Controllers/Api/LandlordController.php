@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -122,8 +123,14 @@ class LandlordController extends Controller
         }
 
         try {
-            // Prepare data for insertion
-            $data = [
+            // Generate random 12-digit userID
+            do {
+                $userID = str_pad(random_int(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
+            } while (User::where('userID', $userID)->exists());
+
+            // Use Eloquent model to create landlord
+            $landlord = User::create([
+                'userID' => $userID,
                 'firstName' => $request->firstName,
                 'lastName' => $request->lastName,
                 'email' => $request->email,
@@ -131,31 +138,22 @@ class LandlordController extends Controller
                 'password' => bcrypt($request->password),
                 'user_type' => 'landlord',
                 'verified' => 0,
-            ];
+            ]);
 
-            // Insert landlord and get ID
-            $landlordId = DB::table('user_tbl')->insertGetId($data);
-
-            if ($landlordId) {
-                // Retrieve the created landlord (excluding password)
-                $createdLandlord = DB::table('user_tbl')
-                    ->where('userID', $landlordId)
-                    ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type', 
-                             'verified')
-                    ->first();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Landlord created successfully',
-                    'data' => $createdLandlord,
-                    'id' => $landlordId
-                ], 201);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to create landlord'
-                ], 500);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Landlord created successfully',
+                'data' => [
+                    'userID' => $landlord->userID,
+                    'firstName' => $landlord->firstName,
+                    'lastName' => $landlord->lastName,
+                    'email' => $landlord->email,
+                    'phone' => $landlord->phone,
+                    'user_type' => $landlord->user_type,
+                    'verified' => $landlord->verified
+                ],
+                'id' => $landlord->userID
+            ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
