@@ -438,9 +438,11 @@ class LandlordController extends Controller
             $startOfWeek = now()->startOfWeek();
             $endOfWeek = now()->endOfWeek();
 
-            // Get all landlords created this week (temporarily showing all to debug)
+            // Get all landlords created this week
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
+                ->whereDate('regDate', '>=', $startOfWeek)
+                ->whereDate('regDate', '<=', $endOfWeek)
                 ->select(
                     'userID',
                     'firstName', 
