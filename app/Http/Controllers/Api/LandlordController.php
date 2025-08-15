@@ -438,7 +438,7 @@ class LandlordController extends Controller
             $startOfWeek = now()->startOfWeek();
             $endOfWeek = now()->endOfWeek();
 
-            // Get landlords created this week
+            // Get all landlords created this week
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
                 ->whereDate('regDate', '>=', $startOfWeek)
@@ -450,13 +450,12 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type',
-                    'regDate'
+                    'user_type'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
 
-            // Add property count for each landlord
+            // Loop through each landlord and count their properties using property_owner field
             $landlordsWithPropertyCount = $landlords->map(function ($landlord) {
                 $propertyCount = DB::table('property_tbl')
                     ->where('property_owner', $landlord->userID)
@@ -466,29 +465,17 @@ class LandlordController extends Controller
                 return $landlord;
             });
 
-            $weekStats = [
-                'total_landlords' => $landlordsWithPropertyCount->count(),
-                'verified_landlords' => $landlordsWithPropertyCount->where('verified', 1)->count(),
-                'unverified_landlords' => $landlordsWithPropertyCount->where('verified', 0)->count(),
-                'total_properties_owned' => $landlordsWithPropertyCount->sum('property_count')
-            ];
-
             return response()->json([
                 'success' => true,
-                'message' => 'Landlords for this week retrieved successfully',
+                'message' => 'Landlords retrieved successfully',
                 'data' => $landlordsWithPropertyCount,
-                'count' => $landlordsWithPropertyCount->count(),
-                'period' => [
-                    'start' => $startOfWeek->format('Y-m-d H:i:s'),
-                    'end' => $endOfWeek->format('Y-m-d H:i:s')
-                ],
-                'week_statistics' => $weekStats
+                'count' => $landlordsWithPropertyCount->count()
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving landlords for this week',
+                'message' => 'An error occurred while retrieving landlords',
                 'error' => $e->getMessage()
             ], 500);
         }
