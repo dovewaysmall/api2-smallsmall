@@ -15,36 +15,36 @@ class LandlordController extends Controller
     public function index()
     {
         try {
+            // Get all landlords first
             $landlords = DB::table('user_tbl')
-                ->leftJoin('property_tbl', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(property_tbl.poster AS CHAR)'))
-                ->where('user_tbl.user_type', 'landlord')
+                ->where('user_type', 'landlord')
                 ->select(
-                    'user_tbl.userID',
-                    'user_tbl.firstName', 
-                    'user_tbl.lastName',
-                    'user_tbl.email',
-                    'user_tbl.phone',
-                    'user_tbl.verified',
-                    'user_tbl.user_type',
-                    DB::raw('COUNT(property_tbl.propertyID) as property_count')
+                    'userID',
+                    'firstName', 
+                    'lastName',
+                    'email',
+                    'phone',
+                    'verified',
+                    'user_type'
                 )
-                ->groupBy(
-                    'user_tbl.userID',
-                    'user_tbl.firstName',
-                    'user_tbl.lastName',
-                    'user_tbl.email',
-                    'user_tbl.phone',
-                    'user_tbl.verified',
-                    'user_tbl.user_type'
-                )
-                ->orderBy('user_tbl.userID', 'desc')
+                ->orderBy('userID', 'desc')
                 ->get();
+
+            // Loop through each landlord and count their properties using property_owner field
+            $landlordsWithPropertyCount = $landlords->map(function ($landlord) {
+                $propertyCount = DB::table('property_tbl')
+                    ->where('property_owner', $landlord->userID)
+                    ->count();
+                
+                $landlord->property_count = $propertyCount;
+                return $landlord;
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Landlords retrieved successfully',
-                'data' => $landlords,
-                'count' => $landlords->count()
+                'data' => $landlordsWithPropertyCount,
+                'count' => $landlordsWithPropertyCount->count()
             ]);
 
         } catch (\Exception $e) {
