@@ -441,8 +441,8 @@ class LandlordController extends Controller
             // Get landlords created this week
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
-                ->whereDate('created_at', '>=', $startOfWeek)
-                ->whereDate('created_at', '<=', $endOfWeek)
+                ->whereDate('regDate', '>=', $startOfWeek)
+                ->whereDate('regDate', '<=', $endOfWeek)
                 ->select(
                     'userID',
                     'firstName', 
@@ -451,7 +451,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'created_at'
+                    'regDate'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -506,8 +506,8 @@ class LandlordController extends Controller
             // Get landlords created this month
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
-                ->whereDate('created_at', '>=', $startOfMonth)
-                ->whereDate('created_at', '<=', $endOfMonth)
+                ->whereDate('regDate', '>=', $startOfMonth)
+                ->whereDate('regDate', '<=', $endOfMonth)
                 ->select(
                     'userID',
                     'firstName', 
@@ -516,7 +516,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'created_at'
+                    'regDate'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -573,8 +573,8 @@ class LandlordController extends Controller
             // Get landlords created this year
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
-                ->whereDate('created_at', '>=', $startOfYear)
-                ->whereDate('created_at', '<=', $endOfYear)
+                ->whereDate('regDate', '>=', $startOfYear)
+                ->whereDate('regDate', '<=', $endOfYear)
                 ->select(
                     'userID',
                     'firstName', 
@@ -583,7 +583,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'created_at'
+                    'regDate'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -606,7 +606,7 @@ class LandlordController extends Controller
                 'average_properties_per_landlord' => $landlordsWithPropertyCount->count() > 0 ? 
                     round($landlordsWithPropertyCount->sum('property_count') / $landlordsWithPropertyCount->count(), 2) : 0,
                 'monthly_breakdown' => $landlordsWithPropertyCount->groupBy(function($item) {
-                    return date('Y-m', strtotime($item->created_at));
+                    return date('Y-m', strtotime($item->regDate));
                 })->map->count()
             ];
 
