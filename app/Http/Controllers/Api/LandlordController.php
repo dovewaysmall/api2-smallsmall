@@ -16,7 +16,7 @@ class LandlordController extends Controller
     {
         try {
             $landlords = DB::table('user_tbl')
-                ->leftJoin('property_tbl', 'user_tbl.userID', '=', 'property_tbl.poster')
+                ->leftJoin('property_tbl', DB::raw('CAST(user_tbl.userID AS CHAR)'), '=', DB::raw('CAST(property_tbl.poster AS CHAR)'))
                 ->where('user_tbl.user_type', 'landlord')
                 ->select(
                     'user_tbl.userID',
