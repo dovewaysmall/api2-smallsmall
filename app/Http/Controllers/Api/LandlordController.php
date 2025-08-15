@@ -16,7 +16,7 @@ class LandlordController extends Controller
     {
         try {
             $landlords = DB::table('user_tbl')
-                ->leftJoin('property_tbl', 'user_tbl.userID', '=', 'property_tbl.landlordID')
+                ->leftJoin('property_tbl', 'user_tbl.userID', '=', 'property_tbl.poster')
                 ->where('user_tbl.user_type', 'landlord')
                 ->select(
                     'user_tbl.userID',
@@ -76,7 +76,7 @@ class LandlordController extends Controller
 
             // Get landlord's properties
             $properties = DB::table('property_tbl')
-                ->where('landlordID', $id)
+                ->where('poster', $id)
                 ->select('propertyID', 'propertyTitle', 'address', 'price', 'propertyType', 'status')
                 ->get();
 
@@ -403,7 +403,7 @@ class LandlordController extends Controller
 
             // Properties owned by landlords
             $totalProperties = DB::table('property_tbl')
-                ->whereIn('landlordID', function($query) {
+                ->whereIn('poster', function($query) {
                     $query->select('userID')
                           ->from('user_tbl')
                           ->where('user_type', 'landlord');

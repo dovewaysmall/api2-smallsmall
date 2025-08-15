@@ -338,7 +338,7 @@ class PropertyController extends Controller
         try {
             $properties = DB::table('property_tbl')
                 ->select('property_tbl.*')
-                ->where('property_tbl.propertyID', $landlordId)
+                ->where('property_tbl.poster', $landlordId)
                 ->orderBy('property_tbl.dateOfEntry', 'desc')
                 ->get();
 
