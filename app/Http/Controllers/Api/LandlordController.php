@@ -112,6 +112,7 @@ class LandlordController extends Controller
             'email' => 'required|email|unique:user_tbl,email|max:255',
             'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8|max:255',
+            'income' => 'required|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -149,6 +150,7 @@ class LandlordController extends Controller
                 'profile_picture' => '',
                 'interest' => '',
                 'regDate' => now(),
+                'income' => $request->income,
             ]);
 
             return response()->json([

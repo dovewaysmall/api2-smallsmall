@@ -31,6 +31,7 @@ class User extends Authenticatable
         'profile_picture',
         'interest',
         'regDate',
+        'income',
     ];
 
     protected $hidden = [

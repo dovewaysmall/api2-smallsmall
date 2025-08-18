@@ -32,6 +32,7 @@ class UserApiTest extends TestCase
                 $table->string('profile_picture')->default('');
                 $table->string('interest')->default('');
                 $table->integer('verified')->default(0);
+                $table->string('income')->nullable();
                 $table->datetime('regDate');
                 $table->timestamps();
             });
@@ -102,6 +103,7 @@ class UserApiTest extends TestCase
             'profile_picture' => '',
             'interest' => '',
             'verified' => 0,
+            'income' => '50000',
             'regDate' => now(),
         ]);
     }
