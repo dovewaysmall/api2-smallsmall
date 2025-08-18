@@ -77,7 +77,7 @@ class LandlordController extends Controller
 
             // Get landlord's properties
             $properties = DB::table('property_tbl')
-                ->where('poster', $id)
+                ->where('property_owner', $id)
                 ->select('propertyID', 'propertyTitle', 'address', 'price', 'propertyType', 'status')
                 ->get();
 
