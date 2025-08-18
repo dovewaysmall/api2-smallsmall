@@ -31,21 +31,30 @@ class LandlordController extends Controller
                 ->orderBy('userID', 'desc')
                 ->get();
 
-            // Loop through each landlord and count their properties using property_owner field
-            $landlordsWithPropertyCount = $landlords->map(function ($landlord) {
+            // Loop through each landlord and count their properties and tenants
+            $landlordsWithCounts = $landlords->map(function ($landlord) {
+                // Count properties owned by this landlord
                 $propertyCount = DB::table('property_tbl')
                     ->where('property_owner', $landlord->userID)
                     ->count();
                 
+                // Count tenants for this landlord (through property bookings)
+                $tenantCount = DB::table('bookings')
+                    ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+                    ->where('property_tbl.property_owner', $landlord->userID)
+                    ->distinct('bookings.userID')
+                    ->count('bookings.userID');
+                
                 $landlord->property_count = $propertyCount;
+                $landlord->tenant_count = $tenantCount;
                 return $landlord;
             });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Landlords retrieved successfully',
-                'data' => $landlordsWithPropertyCount,
-                'count' => $landlordsWithPropertyCount->count()
+                'data' => $landlordsWithCounts,
+                'count' => $landlordsWithCounts->count()
             ]);
 
         } catch (\Exception $e) {
@@ -81,13 +90,21 @@ class LandlordController extends Controller
                 ->select('propertyID', 'propertyTitle', 'address', 'price', 'propertyType', 'status')
                 ->get();
 
+            // Get landlord's tenant count
+            $tenantCount = DB::table('bookings')
+                ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+                ->where('property_tbl.property_owner', $id)
+                ->distinct('bookings.userID')
+                ->count('bookings.userID');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Landlord retrieved successfully',
                 'data' => [
                     'landlord_info' => $landlord,
                     'properties' => $properties,
-                    'property_count' => $properties->count()
+                    'property_count' => $properties->count(),
+                    'tenant_count' => $tenantCount
                 ]
             ]);
 
