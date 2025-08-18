@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class PayoutController extends Controller
 {
     /**
-     * Display a listing of all payouts (Improved version of your original).
+     * Display a listing of all payouts.
      */
     public function index()
     {
@@ -27,7 +28,7 @@ class PayoutController extends Controller
                     'authorizer.firstName as authorizer_firstName',
                     'authorizer.lastName as authorizer_lastName'
                 )
-                ->orderBy('payout.id', 'desc')
+                ->orderBy('payout.next_payout_date', 'desc')
                 ->get();
 
             return response()->json([
@@ -47,7 +48,7 @@ class PayoutController extends Controller
     }
 
     /**
-     * Display the specified payout (Improved version of your original).
+     * Display the specified payout.
      */
     public function show(string $id)
     {
@@ -90,21 +91,19 @@ class PayoutController extends Controller
     }
 
     /**
-     * Store a newly created payout (Improved version of your original).
+     * Store a newly created payout.
      */
     public function store(Request $request)
     {
-        // Enhanced validation rules
         $validator = Validator::make($request->all(), [
             'payee_id' => 'required|string|max:255',
-            'next_payout' => 'required|numeric|min:0',
-            'next_payout_date' => 'required|date|after_or_equal:today',
-            'authorized_by' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'next_payout_date' => 'required|date',
+            'payout_status' => 'nullable|in:pending,approved,disbursed',
+            'authorized_by' => 'nullable|string|max:255',
             'date_paid' => 'nullable|date',
-            'payout_method' => 'nullable|string|in:bank_transfer,mobile_money,cash,cheque',
-            'bank_details' => 'nullable|string|max:500',
-            'reference_number' => 'nullable|string|max:255',
-            'notes' => 'nullable|string|max:1000',
+            'receipts' => 'nullable|array|max:5',
+            'receipts.*' => 'file|mimes:pdf,jpeg,png,jpg,gif|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -116,29 +115,47 @@ class PayoutController extends Controller
         }
 
         try {
-            // Prepare data for insertion
+            // Handle receipt uploads
+            $receiptFolder = null;
+            $receiptPaths = [];
+            
+            if ($request->hasFile('receipts')) {
+                $receipts = $request->file('receipts');
+                $receiptFolder = 'payout_' . time() . '_' . mt_rand(1000, 9999);
+                
+                foreach ($receipts as $index => $receipt) {
+                    $receiptName = $receiptFolder . '_' . $index . '.' . $receipt->getClientOriginalExtension();
+                    $receiptPath = $receipt->storeAs('payout_receipts/' . $receiptFolder, $receiptName, 'public');
+                    $receiptPaths[] = $receiptPath;
+                }
+            }
+
+            $nextId = DB::table('payout')->max('id') + 1;
+            
             $data = [
+                'id' => $nextId,
                 'payee_id' => $request->payee_id,
-                'next_payout' => $request->next_payout,
+                'amount' => $request->amount,
+                'next_payout' => $request->amount, // Keep for backward compatibility
                 'next_payout_date' => $request->next_payout_date,
-                'payout_status' => 'pending',
+                'payout_status' => $request->payout_status ?? 'pending',
                 'authorized_by' => $request->authorized_by,
                 'date_paid' => $request->date_paid,
-                'payout_method' => $request->payout_method,
-                'bank_details' => $request->bank_details,
-                'reference_number' => $request->reference_number,
-                'notes' => $request->notes,
-                'date_created' => now(),
+                'receipt_folder' => $receiptFolder,
+                'receipt_paths' => !empty($receiptPaths) ? json_encode($receiptPaths) : null,
             ];
 
-            // Insert payout and get ID
-            $payoutId = DB::table('payout')->insertGetId($data);
+            $inserted = DB::table('payout')->insert($data);
+            $payoutId = $inserted ? $nextId : false;
 
             if ($payoutId) {
-                // Retrieve the created payout with user details
                 $createdPayout = DB::table('payout')
                     ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                    ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
+                    ->select(
+                        'payout.*',
+                        'user_tbl.firstName as payee_firstName',
+                        'user_tbl.lastName as payee_lastName'
+                    )
                     ->where('payout.id', $payoutId)
                     ->first();
 
@@ -179,14 +196,14 @@ class PayoutController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'next_payout' => 'sometimes|numeric|min:0',
+            'payee_id' => 'sometimes|string|max:255',
+            'amount' => 'sometimes|numeric|min:0',
             'next_payout_date' => 'sometimes|date',
-            'payout_status' => 'sometimes|in:pending,approved,paid,cancelled,failed',
+            'payout_status' => 'sometimes|in:pending,approved,disbursed',
+            'authorized_by' => 'nullable|string|max:255',
             'date_paid' => 'nullable|date',
-            'payout_method' => 'nullable|string|in:bank_transfer,mobile_money,cash,cheque',
-            'bank_details' => 'nullable|string|max:500',
-            'reference_number' => 'nullable|string|max:255',
-            'notes' => 'nullable|string|max:1000',
+            'receipts' => 'nullable|array|max:5',
+            'receipts.*' => 'file|mimes:pdf,jpeg,png,jpg,gif|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -198,21 +215,56 @@ class PayoutController extends Controller
         }
 
         try {
+            // Handle new receipt uploads if provided
+            $receiptFolder = $payout->receipt_folder;
+            $existingReceiptPaths = json_decode($payout->receipt_paths ?? '[]', true);
+            $newReceiptPaths = [];
+            
+            if ($request->hasFile('receipts')) {
+                $receipts = $request->file('receipts');
+                if (!$receiptFolder) {
+                    $receiptFolder = 'payout_' . time() . '_' . mt_rand(1000, 9999);
+                }
+                
+                foreach ($receipts as $index => $receipt) {
+                    $receiptName = $receiptFolder . '_' . time() . '_' . $index . '.' . $receipt->getClientOriginalExtension();
+                    $receiptPath = $receipt->storeAs('payout_receipts/' . $receiptFolder, $receiptName, 'public');
+                    $newReceiptPaths[] = $receiptPath;
+                }
+                
+                // Combine existing and new receipts
+                $allReceiptPaths = array_merge($existingReceiptPaths, $newReceiptPaths);
+            } else {
+                $allReceiptPaths = $existingReceiptPaths;
+            }
+
             $updateData = $request->only([
-                'next_payout', 'next_payout_date', 'payout_status', 'date_paid',
-                'payout_method', 'bank_details', 'reference_number', 'notes'
+                'payee_id', 'amount', 'next_payout_date', 'payout_status', 'authorized_by', 'date_paid'
             ]);
 
-            // Auto-set date_paid if status is changed to paid
-            if ($request->payout_status === 'paid' && !$request->date_paid) {
-                $updateData['date_paid'] = now();
+            // Sync amount with next_payout for backward compatibility
+            if (isset($updateData['amount'])) {
+                $updateData['next_payout'] = $updateData['amount'];
+            }
+
+            // Update receipt data if new receipts were uploaded
+            if (!empty($newReceiptPaths)) {
+                $updateData['receipt_folder'] = $receiptFolder;
+                $updateData['receipt_paths'] = json_encode($allReceiptPaths);
             }
 
             DB::table('payout')->where('id', $id)->update($updateData);
             
             $updatedPayout = DB::table('payout')
                 ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
+                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->select(
+                    'payout.*',
+                    'user_tbl.firstName as payee_firstName',
+                    'user_tbl.lastName as payee_lastName',
+                    'authorizer.firstName as authorizer_firstName',
+                    'authorizer.lastName as authorizer_lastName'
+                )
                 ->where('payout.id', $id)
                 ->first();
 
@@ -246,6 +298,11 @@ class PayoutController extends Controller
         }
 
         try {
+            // Delete receipts if they exist
+            if ($payout->receipt_folder) {
+                Storage::disk('public')->deleteDirectory('payout_receipts/' . $payout->receipt_folder);
+            }
+
             DB::table('payout')->where('id', $id)->delete();
 
             return response()->json([
@@ -268,13 +325,13 @@ class PayoutController extends Controller
     public function getByStatus($status)
     {
         $validator = Validator::make(['status' => $status], [
-            'status' => 'required|in:pending,approved,paid,cancelled,failed'
+            'status' => 'required|in:pending,approved,disbursed'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid status. Must be: pending, approved, paid, cancelled, or failed',
+                'message' => 'Invalid status. Must be: pending, approved, or disbursed',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -282,9 +339,16 @@ class PayoutController extends Controller
         try {
             $payouts = DB::table('payout')
                 ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
+                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->select(
+                    'payout.*',
+                    'user_tbl.firstName as payee_firstName',
+                    'user_tbl.lastName as payee_lastName',
+                    'authorizer.firstName as authorizer_firstName',
+                    'authorizer.lastName as authorizer_lastName'
+                )
                 ->where('payout.payout_status', $status)
-                ->orderBy('payout.next_payout_date', 'asc')
+                ->orderBy('payout.next_payout_date', 'desc')
                 ->get();
 
             return response()->json([
@@ -312,19 +376,17 @@ class PayoutController extends Controller
         try {
             $payouts = DB::table('payout')
                 ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
+                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->select(
+                    'payout.*',
+                    'user_tbl.firstName as payee_firstName',
+                    'user_tbl.lastName as payee_lastName',
+                    'authorizer.firstName as authorizer_firstName',
+                    'authorizer.lastName as authorizer_lastName'
+                )
                 ->where('payout.payee_id', $payeeId)
                 ->orderBy('payout.next_payout_date', 'desc')
                 ->get();
-
-            if ($payouts->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'No payouts found for this payee',
-                    'data' => [],
-                    'count' => 0
-                ]);
-            }
 
             return response()->json([
                 'success' => true,
@@ -344,32 +406,28 @@ class PayoutController extends Controller
     }
 
     /**
-     * Get payouts due within specified days.
+     * Get landlords for dropdown list.
      */
-    public function getDue($days = 7)
+    public function getLandlords()
     {
         try {
-            $payouts = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email', 'user_tbl.phone')
-                ->where('payout.payout_status', 'pending')
-                ->whereDate('payout.next_payout_date', '<=', now()->addDays($days))
-                ->orderBy('payout.next_payout_date', 'asc')
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->select('userID', 'firstName', 'lastName', 'email')
+                ->orderBy('firstName', 'asc')
                 ->get();
 
             return response()->json([
                 'success' => true,
-                'message' => "Payouts due within {$days} days retrieved successfully",
-                'data' => $payouts,
-                'count' => $payouts->count(),
-                'total_amount' => $payouts->sum('next_payout'),
-                'days_ahead' => $days
+                'message' => 'Landlords retrieved successfully',
+                'data' => $landlords,
+                'count' => $landlords->count()
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while retrieving due payouts',
+                'message' => 'An error occurred while retrieving landlords',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -383,30 +441,21 @@ class PayoutController extends Controller
         try {
             $totalPayouts = DB::table('payout')->count();
             $pendingPayouts = DB::table('payout')->where('payout_status', 'pending')->count();
-            $paidPayouts = DB::table('payout')->where('payout_status', 'paid')->count();
-            
-            $totalPending = DB::table('payout')
-                ->where('payout_status', 'pending')
-                ->sum('next_payout');
-            
-            $totalPaid = DB::table('payout')
-                ->where('payout_status', 'paid')
-                ->sum('next_payout');
+            $approvedPayouts = DB::table('payout')->where('payout_status', 'approved')->count();
+            $disbursedPayouts = DB::table('payout')->where('payout_status', 'disbursed')->count();
 
             $statusStats = DB::table('payout')
-                ->select('payout_status', DB::raw('count(*) as count'), DB::raw('sum(next_payout) as total_amount'))
+                ->select('payout_status as status_field', DB::raw('count(*) as count'))
                 ->groupBy('payout_status')
                 ->get();
 
-            $overdue = DB::table('payout')
-                ->where('payout_status', 'pending')
-                ->whereDate('next_payout_date', '<', now())
-                ->count();
+            $totalAmount = DB::table('payout')->sum('amount');
+            $disbursedAmount = DB::table('payout')
+                ->where('payout_status', 'disbursed')
+                ->sum('amount');
 
-            $dueThisWeek = DB::table('payout')
-                ->where('payout_status', 'pending')
-                ->whereDate('next_payout_date', '>=', now())
-                ->whereDate('next_payout_date', '<=', now()->addDays(7))
+            $monthlyPayouts = DB::table('payout')
+                ->where('next_payout_date', '>=', now()->subDays(30))
                 ->count();
 
             return response()->json([
@@ -414,11 +463,11 @@ class PayoutController extends Controller
                 'message' => 'Payout statistics retrieved successfully',
                 'total_payouts' => $totalPayouts,
                 'pending_payouts' => $pendingPayouts,
-                'paid_payouts' => $paidPayouts,
-                'overdue_payouts' => $overdue,
-                'due_this_week' => $dueThisWeek,
-                'total_pending_amount' => round($totalPending, 2),
-                'total_paid_amount' => round($totalPaid, 2),
+                'approved_payouts' => $approvedPayouts,
+                'disbursed_payouts' => $disbursedPayouts,
+                'monthly_payouts' => $monthlyPayouts,
+                'total_amount' => round($totalAmount, 2),
+                'disbursed_amount' => round($disbursedAmount, 2),
                 'status_breakdown' => $statusStats
             ]);
 
@@ -426,58 +475,6 @@ class PayoutController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving payout statistics',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get payouts by date range.
-     */
-    public function getByDateRange(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'date_field' => 'sometimes|in:next_payout_date,date_paid,date_created'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $dateField = $request->date_field ?? 'next_payout_date';
-            
-            $payouts = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->select('payout.*', 'user_tbl.firstName', 'user_tbl.lastName', 'user_tbl.email')
-                ->whereDate("payout.{$dateField}", '>=', $request->start_date)
-                ->whereDate("payout.{$dateField}", '<=', $request->end_date)
-                ->orderBy("payout.{$dateField}", 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payouts retrieved successfully',
-                'data' => $payouts,
-                'count' => $payouts->count(),
-                'total_amount' => $payouts->sum('next_payout'),
-                'date_range' => [
-                    'start' => $request->start_date,
-                    'end' => $request->end_date,
-                    'field' => $dateField
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while retrieving payouts',
                 'error' => $e->getMessage()
             ], 500);
         }

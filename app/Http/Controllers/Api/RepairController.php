@@ -92,9 +92,13 @@ class RepairController extends Controller
         $validator = Validator::make($request->all(), [
             'items_repaired' => 'required|string|max:2000',
             'apartment_owner_id' => 'required|string|max:255',
+            'property_id' => 'nullable|string|max:50',
             'repair_amount' => 'nullable|numeric|min:0',
             'repair_status' => 'nullable|in:pending,in_progress,completed,cancelled',
             'repair_done_by' => 'nullable|string|max:255',
+            'feedback' => 'nullable|string|max:2000',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -106,16 +110,35 @@ class RepairController extends Controller
         }
 
         try {
+            // Handle image uploads
+            $imageFolder = null;
+            $imagesPaths = [];
+            
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                $imageFolder = 'repair_' . time() . '_' . mt_rand(1000, 9999);
+                
+                foreach ($images as $index => $image) {
+                    $imageName = $imageFolder . '_' . $index . '.' . $image->getClientOriginalExtension();
+                    $imagePath = $image->storeAs('repair_images/' . $imageFolder, $imageName, 'public');
+                    $imagesPaths[] = $imagePath;
+                }
+            }
+
             $nextId = DB::table('repairs')->max('id') + 1;
             
             $data = [
                 'id' => $nextId,
                 'items_repaired' => $request->items_repaired,
                 'apartment_owner_id' => $request->apartment_owner_id,
+                'property_id' => $request->property_id,
                 'repair_amount' => $request->repair_amount ?? 0,
                 'repair_date' => now()->toDateString(),
                 'repair_status' => $request->repair_status ?? 'pending',
                 'repair_done_by' => $request->repair_done_by ?? '',
+                'feedback' => $request->feedback,
+                'image_folder' => $imageFolder,
+                'images_paths' => !empty($imagesPaths) ? json_encode($imagesPaths) : null,
             ];
 
             $inserted = DB::table('repairs')->insert($data);
@@ -170,9 +193,13 @@ class RepairController extends Controller
 
         $validator = Validator::make($request->all(), [
             'items_repaired' => 'sometimes|string|max:2000',
+            'property_id' => 'sometimes|string|max:50',
             'repair_amount' => 'nullable|numeric|min:0',
             'repair_status' => 'sometimes|in:pending,in_progress,completed,cancelled',
             'repair_done_by' => 'nullable|string|max:255',
+            'feedback' => 'nullable|string|max:2000',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -184,19 +211,50 @@ class RepairController extends Controller
         }
 
         try {
+            // Handle new image uploads if provided
+            $imageFolder = $repair->image_folder;
+            $existingImagesPaths = json_decode($repair->images_paths ?? '[]', true);
+            $newImagesPaths = [];
+            
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                if (!$imageFolder) {
+                    $imageFolder = 'repair_' . time() . '_' . mt_rand(1000, 9999);
+                }
+                
+                foreach ($images as $index => $image) {
+                    $imageName = $imageFolder . '_' . time() . '_' . $index . '.' . $image->getClientOriginalExtension();
+                    $imagePath = $image->storeAs('repair_images/' . $imageFolder, $imageName, 'public');
+                    $newImagesPaths[] = $imagePath;
+                }
+                
+                // Combine existing and new images
+                $allImagesPaths = array_merge($existingImagesPaths, $newImagesPaths);
+            } else {
+                $allImagesPaths = $existingImagesPaths;
+            }
+
             $updateData = $request->only([
-                'items_repaired', 'repair_amount', 'repair_status', 'repair_done_by'
+                'items_repaired', 'property_id', 'repair_amount', 'repair_status', 'repair_done_by', 'feedback'
             ]);
+
+            // Update image data if new images were uploaded
+            if (!empty($newImagesPaths)) {
+                $updateData['image_folder'] = $imageFolder;
+                $updateData['images_paths'] = json_encode($allImagesPaths);
+            }
 
             DB::table('repairs')->where('id', $id)->update($updateData);
             
             $updatedRepair = DB::table('repairs')
                 ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'user_tbl.firstName as requester_firstName',
                     'user_tbl.lastName as requester_lastName',
+                    'property_tbl.propertyTitle as property_title',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -233,6 +291,11 @@ class RepairController extends Controller
         }
 
         try {
+            // Delete images if they exist
+            if ($repair->image_folder) {
+                Storage::disk('public')->deleteDirectory('repair_images/' . $repair->image_folder);
+            }
+
             DB::table('repairs')->where('id', $id)->delete();
 
             return response()->json([
@@ -257,9 +320,11 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
+                    'property_tbl.propertyTitle as property_title',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -304,11 +369,13 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'user_tbl.firstName as requester_firstName',
                     'user_tbl.lastName as requester_lastName',
+                    'property_tbl.propertyTitle as property_title',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -341,15 +408,17 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'user_tbl.firstName as requester_firstName',
                     'user_tbl.lastName as requester_lastName',
+                    'property_tbl.propertyTitle as property_title',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
-                ->where('repairs.items_repaired', 'LIKE', '%' . $type . '%')
+                ->where('repairs.items_repaired', 'LIKE', "%{$type}%")
                 ->orderBy('repairs.repair_date', 'desc')
                 ->get();
 
