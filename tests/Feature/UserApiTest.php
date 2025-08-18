@@ -19,7 +19,7 @@ class UserApiTest extends TestCase
         // Create the user_tbl table for SQLite testing
         if (!Schema::hasTable('user_tbl')) {
             Schema::create('user_tbl', function ($table) {
-                $table->id();
+                $table->integer('id');
                 $table->string('userID')->unique();
                 $table->string('firstName');
                 $table->string('lastName');
@@ -27,6 +27,12 @@ class UserApiTest extends TestCase
                 $table->string('password');
                 $table->string('phone')->nullable();
                 $table->string('user_type')->default('tenant');
+                $table->string('referral')->default('');
+                $table->string('status')->default('active');
+                $table->string('profile_picture')->default('');
+                $table->string('interest')->default('');
+                $table->integer('verified')->default(0);
+                $table->datetime('regDate');
                 $table->timestamps();
             });
         }
@@ -49,7 +55,7 @@ class UserApiTest extends TestCase
         $response->assertJsonStructure([
             'data' => [
                 '*' => [
-                    'id'
+                    'userID'
                 ]
             ]
         ]);
@@ -70,11 +76,12 @@ class UserApiTest extends TestCase
         $user = $this->createTestUser();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson("/api/users/{$user->id}");
+        $response = $this->getJson("/api/users/{$user->userID}");
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'data' => [
-                'id'
+                'id',
+                'userID'
             ]
         ]);
     }
@@ -82,13 +89,20 @@ class UserApiTest extends TestCase
     private function createTestUser(): User
     {
         return User::create([
+            'id' => random_int(100000, 999999),
             'userID' => 'TEST' . time(),
             'firstName' => 'Test',
             'lastName' => 'User',
             'email' => 'test' . time() . '@example.com',
             'password' => bcrypt('password'),
             'phone' => '1234567890',
-            'user_type' => 'tenant'
+            'user_type' => 'tenant',
+            'referral' => '',
+            'status' => 'active',
+            'profile_picture' => '',
+            'interest' => '',
+            'verified' => 0,
+            'regDate' => now(),
         ]);
     }
 }
