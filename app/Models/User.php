@@ -17,6 +17,7 @@ class User extends Authenticatable
     public $timestamps = false;
     
     protected $fillable = [
+        'id',
         'userID',
         'firstName',
         'lastName',
@@ -25,6 +26,11 @@ class User extends Authenticatable
         'phone',
         'user_type',
         'verified',
+        'referral',
+        'status',
+        'profile_picture',
+        'interest',
+        'regDate',
     ];
 
     protected $hidden = [

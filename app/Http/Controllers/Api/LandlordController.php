@@ -128,8 +128,14 @@ class LandlordController extends Controller
                 $userID = str_pad(random_int(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
             } while (User::where('userID', $userID)->exists());
 
+            // Generate a unique id for the record
+            do {
+                $id = random_int(100000, 999999);
+            } while (User::where('id', $id)->exists());
+
             // Use Eloquent model to create landlord
             $landlord = User::create([
+                'id' => $id,
                 'userID' => $userID,
                 'firstName' => $request->firstName,
                 'lastName' => $request->lastName,
@@ -138,6 +144,11 @@ class LandlordController extends Controller
                 'password' => bcrypt($request->password),
                 'user_type' => 'landlord',
                 'verified' => 0,
+                'referral' => '',
+                'status' => 'active',
+                'profile_picture' => '',
+                'interest' => '',
+                'regDate' => now(),
             ]);
 
             return response()->json([
