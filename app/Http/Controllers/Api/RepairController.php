@@ -127,10 +127,6 @@ class RepairController extends Controller
                 'items_repaired' => $request->items_repaired,
                 'apartment_owner_id' => $request->apartment_owner_id,
                 'repair_amount' => 0,
-                'repair_date' => now()->toDateString(),
-                'repair_status' => 'pending',
-                'repair_done_by' => '',
-                'feedback' => '',
             ];
 
             $inserted = DB::table('repairs')->insert($data);
