@@ -92,11 +92,6 @@ class RepairController extends Controller
         $validator = Validator::make($request->all(), [
             'items_repaired' => 'required|string|max:2000',
             'apartment_owner_id' => 'required|string|max:255',
-            'property_id' => 'nullable|string|max:50',
-            'repair_amount' => 'nullable|numeric|min:0',
-            'repair_status' => 'nullable|in:pending,in_progress,completed,cancelled',
-            'repair_done_by' => 'nullable|string|max:255',
-            'feedback' => 'nullable|string|max:2000',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
@@ -131,14 +126,6 @@ class RepairController extends Controller
                 'id' => $nextId,
                 'items_repaired' => $request->items_repaired,
                 'apartment_owner_id' => $request->apartment_owner_id,
-                'property_id' => $request->property_id,
-                'repair_amount' => $request->repair_amount ?? 0,
-                'repair_date' => now()->toDateString(),
-                'repair_status' => $request->repair_status ?? 'pending',
-                'repair_done_by' => $request->repair_done_by ?? '',
-                'feedback' => $request->feedback,
-                'image_folder' => $imageFolder,
-                'images_paths' => !empty($imagesPaths) ? json_encode($imagesPaths) : null,
             ];
 
             $inserted = DB::table('repairs')->insert($data);
@@ -146,12 +133,6 @@ class RepairController extends Controller
 
             if ($repairId) {
                 $createdRepair = DB::table('repairs')
-                    ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                    ->select(
-                        'repairs.*',
-                        'user_tbl.firstName as requester_firstName',
-                        'user_tbl.lastName as requester_lastName'
-                    )
                     ->where('repairs.id', $repairId)
                     ->first();
 
