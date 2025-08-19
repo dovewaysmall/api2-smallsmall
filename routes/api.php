@@ -142,6 +142,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/repairs/priority/{priority}', [RepairController::class, 'getByPriority']);
     Route::get('/repairs/user/{userId}', [RepairController::class, 'getByUser']);
     Route::get('/repairs/date-range', [RepairController::class, 'getByDateRange']);
+    Route::get('/repairs/this-week', [RepairController::class, 'getThisWeek']);
+    Route::get('/repairs/this-month', [RepairController::class, 'getThisMonth']);
+    Route::get('/repairs/this-year', [RepairController::class, 'getThisYear']);
     Route::get('/repairs/{id}', [RepairController::class, 'show']);
     Route::put('/repairs/{id}', [RepairController::class, 'update']);
     Route::delete('/repairs/{id}', [RepairController::class, 'destroy']);

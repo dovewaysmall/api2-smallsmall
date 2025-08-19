@@ -424,6 +424,132 @@ class RepairController extends Controller
     }
 
     /**
+     * Get repairs from this week.
+     */
+    public function getThisWeek()
+    {
+        try {
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
+            
+            $repairs = DB::table('repairs')
+                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'repairs.*',
+                    'user_tbl.firstName as requester_firstName',
+                    'user_tbl.lastName as requester_lastName',
+                    'user_tbl.email as requester_email',
+                    'user_tbl.phone as requester_phone'
+                )
+                ->whereDate('repairs.repair_date', '>=', $startOfWeek)
+                ->whereDate('repairs.repair_date', '<=', $endOfWeek)
+                ->orderBy('repairs.repair_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'This week repairs retrieved successfully',
+                'data' => $repairs,
+                'count' => $repairs->count(),
+                'period' => 'this_week',
+                'start_date' => $startOfWeek->toDateString(),
+                'end_date' => $endOfWeek->toDateString()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving this week repairs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get repairs from this month.
+     */
+    public function getThisMonth()
+    {
+        try {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            
+            $repairs = DB::table('repairs')
+                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'repairs.*',
+                    'user_tbl.firstName as requester_firstName',
+                    'user_tbl.lastName as requester_lastName',
+                    'user_tbl.email as requester_email',
+                    'user_tbl.phone as requester_phone'
+                )
+                ->whereDate('repairs.repair_date', '>=', $startOfMonth)
+                ->whereDate('repairs.repair_date', '<=', $endOfMonth)
+                ->orderBy('repairs.repair_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'This month repairs retrieved successfully',
+                'data' => $repairs,
+                'count' => $repairs->count(),
+                'period' => 'this_month',
+                'start_date' => $startOfMonth->toDateString(),
+                'end_date' => $endOfMonth->toDateString()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving this month repairs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get repairs from this year.
+     */
+    public function getThisYear()
+    {
+        try {
+            $startOfYear = now()->startOfYear();
+            $endOfYear = now()->endOfYear();
+            
+            $repairs = DB::table('repairs')
+                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->select(
+                    'repairs.*',
+                    'user_tbl.firstName as requester_firstName',
+                    'user_tbl.lastName as requester_lastName',
+                    'user_tbl.email as requester_email',
+                    'user_tbl.phone as requester_phone'
+                )
+                ->whereDate('repairs.repair_date', '>=', $startOfYear)
+                ->whereDate('repairs.repair_date', '<=', $endOfYear)
+                ->orderBy('repairs.repair_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'This year repairs retrieved successfully',
+                'data' => $repairs,
+                'count' => $repairs->count(),
+                'period' => 'this_year',
+                'start_date' => $startOfYear->toDateString(),
+                'end_date' => $endOfYear->toDateString()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving this year repairs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get repair statistics.
      */
     public function getStats()
