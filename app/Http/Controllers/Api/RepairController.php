@@ -21,7 +21,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address'
+                    'property_tbl.address as property_address'
                 )
                 ->orderBy('repairs.repair_date', 'desc')
                 ->get();
@@ -53,7 +53,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address'
+                    'property_tbl.address as property_address'
                 )
                 ->where('repairs.id', $id)
                 ->first();
@@ -249,7 +249,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -319,7 +319,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -368,7 +368,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -405,7 +405,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -444,7 +444,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address'
+                    'property_tbl.address as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfWeek)
                 ->whereDate('repairs.repair_date', '<=', $endOfWeek)
@@ -484,7 +484,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address'
+                    'property_tbl.address as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfMonth)
                 ->whereDate('repairs.repair_date', '<=', $endOfMonth)
@@ -524,7 +524,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address'
+                    'property_tbl.address as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfYear)
                 ->whereDate('repairs.repair_date', '<=', $endOfYear)
@@ -562,7 +562,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -612,7 +612,7 @@ class RepairController extends Controller
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
-                    'property_tbl.propertyAddress as property_address',
+                    'property_tbl.address as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
