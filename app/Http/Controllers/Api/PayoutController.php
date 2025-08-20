@@ -17,18 +17,15 @@ class PayoutController extends Controller
     {
         try {
             $payouts = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                 ->select(
                     'payout.*',
-                    'user_tbl.firstName as payee_firstName',
-                    'user_tbl.lastName as payee_lastName',
-                    'user_tbl.email as payee_email',
-                    'user_tbl.phone as payee_phone',
-                    'authorizer.firstName as authorizer_firstName',
-                    'authorizer.lastName as authorizer_lastName'
+                    'user_tbl.firstName as landlord_firstName',
+                    'user_tbl.lastName as landlord_lastName',
+                    'user_tbl.email as landlord_email',
+                    'user_tbl.phone as landlord_phone'
                 )
-                ->orderBy('payout.next_payout_date', 'desc')
+                ->orderBy('payout.id', 'desc')
                 ->get();
 
             return response()->json([
@@ -54,16 +51,13 @@ class PayoutController extends Controller
     {
         try {
             $payout = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                 ->select(
                     'payout.*',
-                    'user_tbl.firstName as payee_firstName',
-                    'user_tbl.lastName as payee_lastName',
-                    'user_tbl.email as payee_email',
-                    'user_tbl.phone as payee_phone',
-                    'authorizer.firstName as authorizer_firstName',
-                    'authorizer.lastName as authorizer_lastName'
+                    'user_tbl.firstName as landlord_firstName',
+                    'user_tbl.lastName as landlord_lastName',
+                    'user_tbl.email as landlord_email',
+                    'user_tbl.phone as landlord_phone'
                 )
                 ->where('payout.id', $id)
                 ->first();
@@ -96,14 +90,11 @@ class PayoutController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'payee_id' => 'required|string|max:255',
+            'landlord_id' => 'required|string|max:20',
             'amount' => 'required|numeric|min:0',
-            'next_payout_date' => 'required|date',
-            'payout_status' => 'nullable|in:pending,approved,disbursed',
-            'authorized_by' => 'nullable|string|max:255',
+            'payout_status' => 'required|in:pending,approved,disbursed',
+            'upload_receipt' => 'required|string|max:100',
             'date_paid' => 'nullable|date',
-            'receipts' => 'nullable|array|max:5',
-            'receipts.*' => 'file|mimes:pdf,jpeg,png,jpg,gif|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -115,46 +106,23 @@ class PayoutController extends Controller
         }
 
         try {
-            // Handle receipt uploads
-            $receiptFolder = null;
-            $receiptPaths = [];
-            
-            if ($request->hasFile('receipts')) {
-                $receipts = $request->file('receipts');
-                $receiptFolder = 'payout_' . time() . '_' . mt_rand(1000, 9999);
-                
-                foreach ($receipts as $index => $receipt) {
-                    $receiptName = $receiptFolder . '_' . $index . '.' . $receipt->getClientOriginalExtension();
-                    $receiptPath = $receipt->storeAs('payout_receipts/' . $receiptFolder, $receiptName, 'public');
-                    $receiptPaths[] = $receiptPath;
-                }
-            }
-
-            $nextId = DB::table('payout')->max('id') + 1;
-            
             $data = [
-                'id' => $nextId,
-                'payee_id' => $request->payee_id,
+                'landlord_id' => $request->landlord_id,
                 'amount' => $request->amount,
-                'next_payout' => $request->amount, // Keep for backward compatibility
-                'next_payout_date' => $request->next_payout_date,
-                'payout_status' => $request->payout_status ?? 'pending',
-                'authorized_by' => $request->authorized_by,
+                'payout_status' => $request->payout_status,
+                'upload_receipt' => $request->upload_receipt,
                 'date_paid' => $request->date_paid,
-                'receipt_folder' => $receiptFolder,
-                'receipt_paths' => !empty($receiptPaths) ? json_encode($receiptPaths) : null,
             ];
 
-            $inserted = DB::table('payout')->insert($data);
-            $payoutId = $inserted ? $nextId : false;
+            $payoutId = DB::table('payout')->insertGetId($data);
 
             if ($payoutId) {
                 $createdPayout = DB::table('payout')
-                    ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                    ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                     ->select(
                         'payout.*',
-                        'user_tbl.firstName as payee_firstName',
-                        'user_tbl.lastName as payee_lastName'
+                        'user_tbl.firstName as landlord_firstName',
+                        'user_tbl.lastName as landlord_lastName'
                     )
                     ->where('payout.id', $payoutId)
                     ->first();
@@ -196,14 +164,11 @@ class PayoutController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payee_id' => 'sometimes|string|max:255',
+            'landlord_id' => 'sometimes|string|max:20',
             'amount' => 'sometimes|numeric|min:0',
-            'next_payout_date' => 'sometimes|date',
             'payout_status' => 'sometimes|in:pending,approved,disbursed',
-            'authorized_by' => 'nullable|string|max:255',
+            'upload_receipt' => 'sometimes|string|max:100',
             'date_paid' => 'nullable|date',
-            'receipts' => 'nullable|array|max:5',
-            'receipts.*' => 'file|mimes:pdf,jpeg,png,jpg,gif|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -215,55 +180,18 @@ class PayoutController extends Controller
         }
 
         try {
-            // Handle new receipt uploads if provided
-            $receiptFolder = $payout->receipt_folder;
-            $existingReceiptPaths = json_decode($payout->receipt_paths ?? '[]', true);
-            $newReceiptPaths = [];
-            
-            if ($request->hasFile('receipts')) {
-                $receipts = $request->file('receipts');
-                if (!$receiptFolder) {
-                    $receiptFolder = 'payout_' . time() . '_' . mt_rand(1000, 9999);
-                }
-                
-                foreach ($receipts as $index => $receipt) {
-                    $receiptName = $receiptFolder . '_' . time() . '_' . $index . '.' . $receipt->getClientOriginalExtension();
-                    $receiptPath = $receipt->storeAs('payout_receipts/' . $receiptFolder, $receiptName, 'public');
-                    $newReceiptPaths[] = $receiptPath;
-                }
-                
-                // Combine existing and new receipts
-                $allReceiptPaths = array_merge($existingReceiptPaths, $newReceiptPaths);
-            } else {
-                $allReceiptPaths = $existingReceiptPaths;
-            }
-
             $updateData = $request->only([
-                'payee_id', 'amount', 'next_payout_date', 'payout_status', 'authorized_by', 'date_paid'
+                'landlord_id', 'amount', 'payout_status', 'upload_receipt', 'date_paid'
             ]);
-
-            // Sync amount with next_payout for backward compatibility
-            if (isset($updateData['amount'])) {
-                $updateData['next_payout'] = $updateData['amount'];
-            }
-
-            // Update receipt data if new receipts were uploaded
-            if (!empty($newReceiptPaths)) {
-                $updateData['receipt_folder'] = $receiptFolder;
-                $updateData['receipt_paths'] = json_encode($allReceiptPaths);
-            }
 
             DB::table('payout')->where('id', $id)->update($updateData);
             
             $updatedPayout = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                 ->select(
                     'payout.*',
-                    'user_tbl.firstName as payee_firstName',
-                    'user_tbl.lastName as payee_lastName',
-                    'authorizer.firstName as authorizer_firstName',
-                    'authorizer.lastName as authorizer_lastName'
+                    'user_tbl.firstName as landlord_firstName',
+                    'user_tbl.lastName as landlord_lastName'
                 )
                 ->where('payout.id', $id)
                 ->first();
@@ -298,11 +226,6 @@ class PayoutController extends Controller
         }
 
         try {
-            // Delete receipts if they exist
-            if ($payout->receipt_folder) {
-                Storage::disk('public')->deleteDirectory('payout_receipts/' . $payout->receipt_folder);
-            }
-
             DB::table('payout')->where('id', $id)->delete();
 
             return response()->json([
@@ -338,17 +261,14 @@ class PayoutController extends Controller
 
         try {
             $payouts = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                 ->select(
                     'payout.*',
-                    'user_tbl.firstName as payee_firstName',
-                    'user_tbl.lastName as payee_lastName',
-                    'authorizer.firstName as authorizer_firstName',
-                    'authorizer.lastName as authorizer_lastName'
+                    'user_tbl.firstName as landlord_firstName',
+                    'user_tbl.lastName as landlord_lastName'
                 )
                 ->where('payout.payout_status', $status)
-                ->orderBy('payout.next_payout_date', 'desc')
+                ->orderBy('payout.id', 'desc')
                 ->get();
 
             return response()->json([
@@ -371,29 +291,26 @@ class PayoutController extends Controller
     /**
      * Get payouts by payee.
      */
-    public function getByPayee($payeeId)
+    public function getByLandlord($landlordId)
     {
         try {
             $payouts = DB::table('payout')
-                ->leftJoin('user_tbl', DB::raw('CAST(payout.payee_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
-                ->leftJoin('user_tbl as authorizer', DB::raw('CAST(payout.authorized_by AS CHAR)'), '=', DB::raw('CAST(authorizer.userID AS CHAR)'))
+                ->leftJoin('user_tbl', 'payout.landlord_id', '=', 'user_tbl.userID')
                 ->select(
                     'payout.*',
-                    'user_tbl.firstName as payee_firstName',
-                    'user_tbl.lastName as payee_lastName',
-                    'authorizer.firstName as authorizer_firstName',
-                    'authorizer.lastName as authorizer_lastName'
+                    'user_tbl.firstName as landlord_firstName',
+                    'user_tbl.lastName as landlord_lastName'
                 )
-                ->where('payout.payee_id', $payeeId)
-                ->orderBy('payout.next_payout_date', 'desc')
+                ->where('payout.landlord_id', $landlordId)
+                ->orderBy('payout.id', 'desc')
                 ->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Payee payouts retrieved successfully',
+                'message' => 'Landlord payouts retrieved successfully',
                 'data' => $payouts,
                 'count' => $payouts->count(),
-                'payee_id' => $payeeId
+                'landlord_id' => $landlordId
             ]);
 
         } catch (\Exception $e) {
@@ -455,7 +372,7 @@ class PayoutController extends Controller
                 ->sum('amount');
 
             $monthlyPayouts = DB::table('payout')
-                ->where('next_payout_date', '>=', now()->subDays(30))
+                ->where('date_paid', '>=', now()->subDays(30))
                 ->count();
 
             return response()->json([

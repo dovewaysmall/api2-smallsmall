@@ -110,9 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payouts', [PayoutController::class, 'store']);
     Route::get('/payouts/stats', [PayoutController::class, 'getStats']);
     Route::get('/payouts/status/{status}', [PayoutController::class, 'getByStatus']);
-    Route::get('/payouts/payee/{payeeId}', [PayoutController::class, 'getByPayee']);
-    Route::get('/payouts/due/{days?}', [PayoutController::class, 'getDue']);
-    Route::get('/payouts/date-range', [PayoutController::class, 'getByDateRange']);
+    Route::get('/payouts/landlord/{landlordId}', [PayoutController::class, 'getByLandlord']);
     Route::get('/payouts/{id}', [PayoutController::class, 'show']);
     Route::put('/payouts/{id}', [PayoutController::class, 'update']);
     Route::delete('/payouts/{id}', [PayoutController::class, 'destroy']);
