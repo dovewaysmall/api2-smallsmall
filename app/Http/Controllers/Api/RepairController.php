@@ -17,7 +17,7 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -49,7 +49,7 @@ class RepairController extends Controller
     {
         try {
             $repair = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -146,7 +146,7 @@ class RepairController extends Controller
 
             if ($repairId) {
                 $createdRepair = DB::table('repairs')
-                    ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                    ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                     ->select(
                         'repairs.*',
                         'property_tbl.propertyTitle as property_title',
@@ -259,8 +259,8 @@ class RepairController extends Controller
             DB::table('repairs')->where('id', $id)->update($updateData);
             
             $updatedRepair = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -329,8 +329,8 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -378,8 +378,8 @@ class RepairController extends Controller
 
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -415,8 +415,8 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -455,7 +455,7 @@ class RepairController extends Controller
             $endOfWeek = now()->endOfWeek();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -495,7 +495,7 @@ class RepairController extends Controller
             $endOfMonth = now()->endOfMonth();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -535,7 +535,7 @@ class RepairController extends Controller
             $endOfYear = now()->endOfYear();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -572,8 +572,8 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -622,8 +622,8 @@ class RepairController extends Controller
 
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_the_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('property_tbl', 'repairs.property_id', '=', 'property_tbl.propertyID')
+                ->leftJoin('user_tbl as handler', 'repairs.who_is_handling_the_repair', '=', 'handler.userID')
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
