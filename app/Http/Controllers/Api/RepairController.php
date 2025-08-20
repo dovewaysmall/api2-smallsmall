@@ -92,6 +92,7 @@ class RepairController extends Controller
             'items_repaired' => 'required|string',
             'who_is_handling_repair' => 'nullable|string|max:100',
             'description_of_repair' => 'nullable|string',
+            'description_of_the repair' => 'nullable|string',
             'cost_of_repair' => 'required|numeric|min:0',
             'repair_status' => 'required|in:pending,on going,completed',
             'feedback' => 'nullable|string',
@@ -132,7 +133,7 @@ class RepairController extends Controller
                 'type_of_repair' => $request->type_of_repair ?? null,
                 'items_repaired' => $request->items_repaired,
                 'who_is_handling_repair' => $request->who_is_handling_repair ?? null,
-                'description_of_repair' => $request->description_of_repair ?? null,
+                'description_of_repair' => $request->description_of_repair ?? $request->input('description_of_the repair') ?? null,
                 'cost_of_repair' => $request->cost_of_repair,
                 'repair_status' => $request->repair_status,
                 'feedback' => $request->feedback ?? null,
@@ -192,6 +193,7 @@ class RepairController extends Controller
             'items_repaired' => 'sometimes|string',
             'who_is_handling_repair' => 'sometimes|string|max:100',
             'description_of_repair' => 'sometimes|string',
+            'description_of_the repair' => 'sometimes|string',
             'cost_of_repair' => 'sometimes|numeric|min:0',
             'repair_status' => 'sometimes|in:pending,on going,completed',
             'feedback' => 'sometimes|string',
@@ -232,8 +234,15 @@ class RepairController extends Controller
             }
 
             $updateData = $request->only([
-                'title_of_repair', 'property_id', 'type_of_repair', 'items_repaired', 'who_is_handling_repair', 'description_of_repair', 'cost_of_repair', 'repair_status', 'feedback'
+                'title_of_repair', 'property_id', 'type_of_repair', 'items_repaired', 'who_is_handling_repair', 'cost_of_repair', 'repair_status', 'feedback'
             ]);
+            
+            // Handle description field with backward compatibility
+            if ($request->has('description_of_repair')) {
+                $updateData['description_of_repair'] = $request->description_of_repair;
+            } elseif ($request->has('description_of_the repair')) {
+                $updateData['description_of_repair'] = $request->input('description_of_the repair');
+            }
 
             // Update image data if new images were uploaded
             if (!empty($newImagesPaths)) {
