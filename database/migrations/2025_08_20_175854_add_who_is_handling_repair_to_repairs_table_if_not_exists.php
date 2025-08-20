@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('repairs', function (Blueprint $table) {
-            if (!Schema::hasColumn('repairs', 'who_is_handling_repair')) {
-                $table->string('who_is_handling_repair', 100)->nullable();
-            }
-        });
+        if (Schema::hasTable('repairs')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                if (!Schema::hasColumn('repairs', 'who_is_handling_repair')) {
+                    $table->string('who_is_handling_repair', 100)->nullable();
+                }
+            });
+        }
     }
 
     /**
@@ -23,10 +25,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('repairs', function (Blueprint $table) {
-            if (Schema::hasColumn('repairs', 'who_is_handling_repair')) {
-                $table->dropColumn('who_is_handling_repair');
-            }
-        });
+        if (Schema::hasTable('repairs')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                if (Schema::hasColumn('repairs', 'who_is_handling_repair')) {
+                    $table->dropColumn('who_is_handling_repair');
+                }
+            });
+        }
     }
 };
