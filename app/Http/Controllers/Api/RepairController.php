@@ -17,13 +17,11 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
-                    'user_tbl.email as requester_email',
-                    'user_tbl.phone as requester_phone'
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address'
                 )
                 ->orderBy('repairs.repair_date', 'desc')
                 ->get();
@@ -51,13 +49,11 @@ class RepairController extends Controller
     {
         try {
             $repair = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
-                    'user_tbl.email as requester_email',
-                    'user_tbl.phone as requester_phone'
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address'
                 )
                 ->where('repairs.id', $id)
                 ->first();
@@ -90,8 +86,15 @@ class RepairController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'items_repaired' => 'required|string|max:2000',
-            'apartment_owner_id' => 'required|string|max:255',
+            'title_of_repair' => 'required|string|max:100',
+            'property_id' => 'required|string|max:50',
+            'type_of_repair' => 'nullable|string|max:100',
+            'items_repaired' => 'required|string',
+            'who_is_handling_repair' => 'nullable|string|max:100',
+            'description_of_the repair' => 'nullable|string',
+            'cost_of_repair' => 'required|numeric|min:0',
+            'repair_status' => 'required|in:pending,on going,completed',
+            'feedback' => 'nullable|string',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
@@ -124,10 +127,17 @@ class RepairController extends Controller
             
             $data = [
                 'id' => $nextId,
+                'title_of_repair' => $request->title_of_repair,
+                'property_id' => $request->property_id,
+                'type_of_repair' => $request->type_of_repair ?? null,
                 'items_repaired' => $request->items_repaired,
-                'apartment_owner_id' => $request->apartment_owner_id,
-                'repair_amount' => 0,
-                'repair_done_by' => '',
+                'who_is_handling_repair' => $request->who_is_handling_repair ?? null,
+                'description_of_the repair' => $request->input('description_of_the repair') ?? null,
+                'cost_of_repair' => $request->cost_of_repair,
+                'repair_status' => $request->repair_status,
+                'feedback' => $request->feedback ?? null,
+                'image_folder' => $imageFolder,
+                'images_paths' => !empty($imagesPaths) ? json_encode($imagesPaths) : null,
                 'repair_date' => now()->toDateString(),
             ];
 
@@ -176,12 +186,15 @@ class RepairController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'items_repaired' => 'sometimes|string|max:2000',
+            'title_of_repair' => 'sometimes|string|max:100',
             'property_id' => 'sometimes|string|max:50',
-            'repair_amount' => 'nullable|numeric|min:0',
-            'repair_status' => 'sometimes|in:pending,in_progress,completed,cancelled',
-            'repair_done_by' => 'nullable|string|max:255',
-            'feedback' => 'nullable|string|max:2000',
+            'type_of_repair' => 'sometimes|string|max:100',
+            'items_repaired' => 'sometimes|string',
+            'who_is_handling_repair' => 'sometimes|string|max:100',
+            'description_of_the repair' => 'sometimes|string',
+            'cost_of_repair' => 'sometimes|numeric|min:0',
+            'repair_status' => 'sometimes|in:pending,on going,completed',
+            'feedback' => 'sometimes|string',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
@@ -219,7 +232,7 @@ class RepairController extends Controller
             }
 
             $updateData = $request->only([
-                'items_repaired', 'property_id', 'repair_amount', 'repair_status', 'repair_done_by', 'feedback'
+                'title_of_repair', 'property_id', 'type_of_repair', 'items_repaired', 'who_is_handling_repair', 'description_of_the repair', 'cost_of_repair', 'repair_status', 'feedback'
             ]);
 
             // Update image data if new images were uploaded
@@ -231,14 +244,12 @@ class RepairController extends Controller
             DB::table('repairs')->where('id', $id)->update($updateData);
             
             $updatedRepair = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
                     'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -303,16 +314,16 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
-                ->where('repairs.apartment_owner_id', $userId)
+                ->where('repairs.property_id', $userId)
                 ->orderBy('repairs.repair_date', 'desc')
                 ->get();
 
@@ -339,27 +350,25 @@ class RepairController extends Controller
     public function getByStatus($status)
     {
         $validator = Validator::make(['status' => $status], [
-            'status' => 'required|in:pending,in_progress,completed,cancelled'
+            'status' => 'required|in:pending,on going,completed'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid status. Must be: pending, in_progress, completed, or cancelled',
+                'message' => 'Invalid status. Must be: pending, on going, or completed',
                 'errors' => $validator->errors()
             ], 422);
         }
 
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
                     'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
@@ -391,18 +400,16 @@ class RepairController extends Controller
     {
         try {
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
                     'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
                     'handler.firstName as handler_firstName',
                     'handler.lastName as handler_lastName'
                 )
-                ->where('repairs.items_repaired', 'LIKE', "%{$type}%")
+                ->where('repairs.type_of_repair', 'LIKE', "%{$type}%")
                 ->orderBy('repairs.repair_date', 'desc')
                 ->get();
 
@@ -433,13 +440,11 @@ class RepairController extends Controller
             $endOfWeek = now()->endOfWeek();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
-                    'user_tbl.email as requester_email',
-                    'user_tbl.phone as requester_phone'
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfWeek)
                 ->whereDate('repairs.repair_date', '<=', $endOfWeek)
@@ -475,13 +480,11 @@ class RepairController extends Controller
             $endOfMonth = now()->endOfMonth();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
-                    'user_tbl.email as requester_email',
-                    'user_tbl.phone as requester_phone'
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfMonth)
                 ->whereDate('repairs.repair_date', '<=', $endOfMonth)
@@ -517,13 +520,11 @@ class RepairController extends Controller
             $endOfYear = now()->endOfYear();
             
             $repairs = DB::table('repairs')
-                ->leftJoin('user_tbl', DB::raw('CAST(repairs.apartment_owner_id AS CHAR)'), '=', DB::raw('CAST(user_tbl.userID AS CHAR)'))
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
                 ->select(
                     'repairs.*',
-                    'user_tbl.firstName as requester_firstName',
-                    'user_tbl.lastName as requester_lastName',
-                    'user_tbl.email as requester_email',
-                    'user_tbl.phone as requester_phone'
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address'
                 )
                 ->whereDate('repairs.repair_date', '>=', $startOfYear)
                 ->whereDate('repairs.repair_date', '<=', $endOfYear)
@@ -550,6 +551,95 @@ class RepairController extends Controller
     }
 
     /**
+     * Get repairs by priority.
+     */
+    public function getByPriority($priority)
+    {
+        try {
+            $repairs = DB::table('repairs')
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->select(
+                    'repairs.*',
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
+                    'handler.firstName as handler_firstName',
+                    'handler.lastName as handler_lastName'
+                )
+                ->where('repairs.repair_status', $priority)
+                ->orderBy('repairs.repair_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repairs retrieved successfully',
+                'data' => $repairs,
+                'count' => $repairs->count(),
+                'priority' => $priority
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving repairs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get repairs by date range.
+     */
+    public function getByDateRange(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $repairs = DB::table('repairs')
+                ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->select(
+                    'repairs.*',
+                    'property_tbl.propertyTitle as property_title',
+                    'property_tbl.propertyAddress as property_address',
+                    'handler.firstName as handler_firstName',
+                    'handler.lastName as handler_lastName'
+                )
+                ->whereDate('repairs.repair_date', '>=', $request->start_date)
+                ->whereDate('repairs.repair_date', '<=', $request->end_date)
+                ->orderBy('repairs.repair_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repairs retrieved successfully',
+                'data' => $repairs,
+                'count' => $repairs->count(),
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving repairs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get repair statistics.
      */
     public function getStats()
@@ -557,7 +647,7 @@ class RepairController extends Controller
         try {
             $totalRequests = DB::table('repairs')->count();
             $pendingRequests = DB::table('repairs')->where('repair_status', 'pending')->count();
-            $inProgressRequests = DB::table('repairs')->where('repair_status', 'in_progress')->count();
+            $onGoingRequests = DB::table('repairs')->where('repair_status', 'on going')->count();
             $completedRequests = DB::table('repairs')->where('repair_status', 'completed')->count();
 
             $statusStats = DB::table('repairs')
@@ -566,14 +656,14 @@ class RepairController extends Controller
                 ->get();
 
             $typeStats = DB::table('repairs')
-                ->select('items_repaired', DB::raw('count(*) as count'))
-                ->groupBy('items_repaired')
+                ->select('type_of_repair', DB::raw('count(*) as count'))
+                ->groupBy('type_of_repair')
                 ->orderBy('count', 'desc')
                 ->get();
 
             $totalCost = DB::table('repairs')
                 ->where('repair_status', 'completed')
-                ->sum('repair_amount');
+                ->sum('cost_of_repair');
 
             $monthlyRequests = DB::table('repairs')
                 ->where('repair_date', '>=', now()->subDays(30))
@@ -584,7 +674,7 @@ class RepairController extends Controller
                 'message' => 'Repair statistics retrieved successfully',
                 'total_requests' => $totalRequests,
                 'pending_requests' => $pendingRequests,
-                'in_progress_requests' => $inProgressRequests,
+                'on_going_requests' => $onGoingRequests,
                 'completed_requests' => $completedRequests,
                 'monthly_requests' => $monthlyRequests,
                 'total_repair_cost' => round($totalCost, 2),
