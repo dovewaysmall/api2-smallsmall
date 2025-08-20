@@ -90,7 +90,7 @@ class RepairController extends Controller
             'property_id' => 'required|string|max:50',
             'type_of_repair' => 'nullable|string|max:100',
             'items_repaired' => 'required|string',
-            'who_is_handling_repair' => 'nullable|string|max:100',
+            'repair_done_by' => 'nullable|string|max:100',
             'description_of_the repair' => 'nullable|string',
             'cost_of_repair' => 'required|numeric|min:0',
             'repair_status' => 'required|in:pending,on going,completed',
@@ -131,7 +131,7 @@ class RepairController extends Controller
                 'property_id' => $request->property_id,
                 'type_of_repair' => $request->type_of_repair ?? null,
                 'items_repaired' => $request->items_repaired,
-                'who_is_handling_repair' => $request->who_is_handling_repair ?? null,
+                'repair_done_by' => $request->repair_done_by ?? '',
                 'description_of_the repair' => $request->input('description_of_the repair') ?? null,
                 'cost_of_repair' => $request->cost_of_repair,
                 'repair_status' => $request->repair_status,
@@ -190,7 +190,7 @@ class RepairController extends Controller
             'property_id' => 'sometimes|string|max:50',
             'type_of_repair' => 'sometimes|string|max:100',
             'items_repaired' => 'sometimes|string',
-            'who_is_handling_repair' => 'sometimes|string|max:100',
+            'repair_done_by' => 'sometimes|string|max:100',
             'description_of_the repair' => 'sometimes|string',
             'cost_of_repair' => 'sometimes|numeric|min:0',
             'repair_status' => 'sometimes|in:pending,on going,completed',
@@ -232,7 +232,7 @@ class RepairController extends Controller
             }
 
             $updateData = $request->only([
-                'title_of_repair', 'property_id', 'type_of_repair', 'items_repaired', 'who_is_handling_repair', 'description_of_the repair', 'cost_of_repair', 'repair_status', 'feedback'
+                'title_of_repair', 'property_id', 'type_of_repair', 'items_repaired', 'repair_done_by', 'description_of_the repair', 'cost_of_repair', 'repair_status', 'feedback'
             ]);
 
             // Update image data if new images were uploaded
@@ -245,7 +245,7 @@ class RepairController extends Controller
             
             $updatedRepair = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -315,7 +315,7 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -364,7 +364,7 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -401,7 +401,7 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -558,7 +558,7 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
@@ -608,7 +608,7 @@ class RepairController extends Controller
         try {
             $repairs = DB::table('repairs')
                 ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
-                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.who_is_handling_repair AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
+                ->leftJoin('user_tbl as handler', DB::raw('CAST(repairs.repair_done_by AS CHAR)'), '=', DB::raw('CAST(handler.userID AS CHAR)'))
                 ->select(
                     'repairs.*',
                     'property_tbl.propertyTitle as property_title',
