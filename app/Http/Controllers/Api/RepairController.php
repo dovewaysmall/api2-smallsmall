@@ -146,6 +146,12 @@ class RepairController extends Controller
 
             if ($repairId) {
                 $createdRepair = DB::table('repairs')
+                    ->leftJoin('property_tbl', DB::raw('CAST(repairs.property_id AS CHAR)'), '=', DB::raw('CAST(property_tbl.propertyID AS CHAR)'))
+                    ->select(
+                        'repairs.*',
+                        'property_tbl.propertyTitle as property_title',
+                        'property_tbl.address as property_address'
+                    )
                     ->where('repairs.id', $repairId)
                     ->first();
 
