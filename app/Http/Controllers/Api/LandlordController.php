@@ -48,7 +48,7 @@ class LandlordController extends Controller
                 
                 $landlord->property_count = $propertyCount;
                 $landlord->tenant_count = $tenantCount;
-                $landlord->landlord_status = $landlord->landlord_status ?? 'not yet boarded';
+                $landlord->landlord_status = $landlord->landlord_status ?? 'not_yet_boarded';
                 return $landlord;
             });
 
@@ -166,7 +166,7 @@ class LandlordController extends Controller
                 'verified' => 0,
                 'referral' => '',
                 'status' => 'active',
-                'landlord_status' => 'not yet boarded',
+                'landlord_status' => 'not_yet_boarded',
                 'profile_picture' => '',
                 'interest' => '',
                 'regDate' => now(),
@@ -220,7 +220,7 @@ class LandlordController extends Controller
             'email' => 'sometimes|email|unique:user_tbl,email,' . $id . ',userID|max:255',
             'phone' => 'sometimes|string|max:20',
             'verified' => 'sometimes|boolean',
-            'landlord_status' => 'sometimes|in:not yet boarded,boarded,unboarded',
+            'landlord_status' => 'sometimes|in:not yet boarded,boarded,unboarded,not_yet_boarded',
         ]);
 
         if ($validator->fails()) {
@@ -627,7 +627,7 @@ class LandlordController extends Controller
     public function getByLandlordStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'landlord_status' => 'required|in:not yet boarded,boarded,unboarded',
+            'landlord_status' => 'required|in:not yet boarded,boarded,unboarded,not_yet_boarded',
         ]);
 
         if ($validator->fails()) {
