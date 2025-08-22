@@ -232,30 +232,14 @@ class LandlordController extends Controller
         }
 
         try {
-            $updateData = $request->only([
-                'firstName', 'lastName', 'email', 'phone', 
-                'verified', 'landlord_status'
-            ]);
-
-            // Debug: log what we received
-            \Log::info('Update request data:', $request->all());
-            \Log::info('Filtered update data:', $updateData);
-
-            // Remove empty values to avoid SQL errors, but keep boolean false and 0
-            $updateData = array_filter($updateData, function($value) {
-                return $value !== null && $value !== '' && $value !== [];
-            });
-
-            \Log::info('Final update data after filtering:', $updateData);
-
-            if (empty($updateData)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No valid fields provided for update',
-                    'received_data' => $request->all(),
-                    'debug' => 'Update data was empty after filtering'
-                ], 400);
-            }
+            $updateData = [];
+            
+            if ($request->has('firstName')) $updateData['firstName'] = $request->firstName;
+            if ($request->has('lastName')) $updateData['lastName'] = $request->lastName;
+            if ($request->has('email')) $updateData['email'] = $request->email;
+            if ($request->has('phone')) $updateData['phone'] = $request->phone;
+            if ($request->has('verified')) $updateData['verified'] = $request->verified;
+            if ($request->has('landlord_status')) $updateData['landlord_status'] = $request->landlord_status;
 
             DB::table('user_tbl')->where('userID', $id)->update($updateData);
             
