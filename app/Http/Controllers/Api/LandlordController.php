@@ -237,6 +237,17 @@ class LandlordController extends Controller
                 'verified', 'landlord_status'
             ]);
 
+            // Remove empty values to avoid SQL errors
+            $updateData = array_filter($updateData, function($value) {
+                return $value !== null && $value !== '';
+            });
+
+            if (empty($updateData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid fields provided for update'
+                ], 400);
+            }
 
             DB::table('user_tbl')->where('userID', $id)->update($updateData);
             
