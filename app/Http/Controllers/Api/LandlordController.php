@@ -241,6 +241,15 @@ class LandlordController extends Controller
             if ($request->has('verified')) $updateData['verified'] = $request->verified;
             if ($request->has('landlord_status')) $updateData['landlord_status'] = $request->landlord_status;
 
+            // Prevent empty update
+            if (empty($updateData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No fields to update',
+                    'request_data' => $request->all()
+                ], 400);
+            }
+
             DB::table('user_tbl')->where('userID', $id)->update($updateData);
             
             $updatedLandlord = DB::table('user_tbl')
