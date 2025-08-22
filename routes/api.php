@@ -102,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/landlords/this-week', [LandlordController::class, 'getThisWeek']);
     Route::get('/landlords/this-month', [LandlordController::class, 'getThisMonth']);
     Route::get('/landlords/this-year', [LandlordController::class, 'getThisYear']);
+    Route::get('/landlords/boarding-status', [LandlordController::class, 'getByBoardingStatus']);
     Route::get('/landlords/{id}', [LandlordController::class, 'show']);
     Route::put('/landlords/{id}', [LandlordController::class, 'update']);
     Route::delete('/landlords/{id}', [LandlordController::class, 'destroy']);

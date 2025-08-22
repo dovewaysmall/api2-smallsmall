@@ -26,7 +26,8 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type'
+                    'user_type',
+                    'boarding_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -164,6 +165,7 @@ class LandlordController extends Controller
                 'verified' => 0,
                 'referral' => '',
                 'status' => 'active',
+                'boarding_status' => 'not yet boarded',
                 'profile_picture' => '',
                 'interest' => '',
                 'regDate' => now(),
@@ -217,6 +219,7 @@ class LandlordController extends Controller
             'email' => 'sometimes|email|unique:user_tbl,email,' . $id . ',userID|max:255',
             'phone' => 'sometimes|string|max:20',
             'verified' => 'sometimes|boolean',
+            'boarding_status' => 'sometimes|in:not yet boarded,onboarded,offboarded',
         ]);
 
         if ($validator->fails()) {
@@ -230,7 +233,7 @@ class LandlordController extends Controller
         try {
             $updateData = $request->only([
                 'firstName', 'lastName', 'email', 'phone', 
-                'verified'
+                'verified', 'boarding_status'
             ]);
 
 
@@ -239,7 +242,7 @@ class LandlordController extends Controller
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'verified')
+                         'verified', 'boarding_status')
                 ->first();
 
             return response()->json([
@@ -342,7 +345,7 @@ class LandlordController extends Controller
                 ->where('user_type', 'landlord')
                 ->where('verified', 1)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 
-                         'userID')
+                         'boarding_status')
                 ->orderBy('userID', 'desc')
                 ->get();
 
@@ -390,7 +393,7 @@ class LandlordController extends Controller
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-                         'userID')
+                         'boarding_status')
                 ->orderBy('userID', 'desc')
                 ->get();
 
@@ -479,6 +482,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
+                    'boarding_status',
                     'regDate'
                 )
                 ->orderBy('userID', 'desc')
@@ -531,7 +535,8 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type'
+                    'user_type',
+                    'boarding_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -583,7 +588,8 @@ class LandlordController extends Controller
                     'email',
                     'phone',
                     'verified',
-                    'user_type'
+                    'user_type',
+                    'boarding_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -609,6 +615,75 @@ class LandlordController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get landlords by boarding status.
+     */
+    public function getByBoardingStatus(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'boarding_status' => 'required|in:not yet boarded,onboarded,offboarded',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $boardingStatus = $request->input('boarding_status');
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('boarding_status', $boardingStatus)
+                ->select(
+                    'userID',
+                    'firstName', 
+                    'lastName',
+                    'email',
+                    'phone',
+                    'verified',
+                    'user_type',
+                    'boarding_status'
+                )
+                ->orderBy('userID', 'desc')
+                ->get();
+
+            // Loop through each landlord and count their properties
+            $landlordsWithCounts = $landlords->map(function ($landlord) {
+                $propertyCount = DB::table('property_tbl')
+                    ->where('property_owner', $landlord->userID)
+                    ->count();
+                
+                $tenantCount = DB::table('bookings')
+                    ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+                    ->where('property_tbl.property_owner', $landlord->userID)
+                    ->distinct('bookings.userID')
+                    ->count('bookings.userID');
+                
+                $landlord->property_count = $propertyCount;
+                $landlord->tenant_count = $tenantCount;
+                return $landlord;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => "Landlords with boarding status '{$boardingStatus}' retrieved successfully",
+                'data' => $landlordsWithCounts,
+                'count' => $landlordsWithCounts->count(),
+                'boarding_status' => $boardingStatus
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlords by boarding status',
                 'error' => $e->getMessage()
             ], 500);
         }
