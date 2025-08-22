@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_tbl', function (Blueprint $table) {
-            $table->enum('boarding_status', ['not yet boarded', 'onboarded', 'offboarded'])
-                  ->default('not yet boarded')
-                  ->after('status');
-        });
+        if (Schema::hasTable('user_tbl')) {
+            Schema::table('user_tbl', function (Blueprint $table) {
+                $table->enum('boarding_status', ['not yet boarded', 'onboarded', 'offboarded'])
+                      ->default('not yet boarded')
+                      ->after('status');
+            });
+        }
     }
 
     /**
@@ -23,8 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_tbl', function (Blueprint $table) {
-            $table->dropColumn('boarding_status');
-        });
+        if (Schema::hasTable('user_tbl') && Schema::hasColumn('user_tbl', 'boarding_status')) {
+            Schema::table('user_tbl', function (Blueprint $table) {
+                $table->dropColumn('boarding_status');
+            });
+        }
     }
 };
