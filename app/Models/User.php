@@ -28,7 +28,6 @@ class User extends Authenticatable
         'verified',
         'referral',
         'status',
-        'boarding_status',
         'profile_picture',
         'interest',
         'regDate',
