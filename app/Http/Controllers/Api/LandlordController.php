@@ -48,6 +48,7 @@ class LandlordController extends Controller
                 
                 $landlord->property_count = $propertyCount;
                 $landlord->tenant_count = $tenantCount;
+                $landlord->landlord_status = $landlord->landlord_status ?? 'not yet boarded';
                 return $landlord;
             });
 
