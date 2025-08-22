@@ -237,15 +237,23 @@ class LandlordController extends Controller
                 'verified', 'landlord_status'
             ]);
 
-            // Remove empty values to avoid SQL errors
+            // Debug: log what we received
+            \Log::info('Update request data:', $request->all());
+            \Log::info('Filtered update data:', $updateData);
+
+            // Remove empty values to avoid SQL errors, but keep boolean false and 0
             $updateData = array_filter($updateData, function($value) {
-                return $value !== null && $value !== '';
+                return $value !== null && $value !== '' && $value !== [];
             });
+
+            \Log::info('Final update data after filtering:', $updateData);
 
             if (empty($updateData)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No valid fields provided for update'
+                    'message' => 'No valid fields provided for update',
+                    'received_data' => $request->all(),
+                    'debug' => 'Update data was empty after filtering'
                 ], 400);
             }
 
