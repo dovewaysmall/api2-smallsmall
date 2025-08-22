@@ -28,6 +28,7 @@ class User extends Authenticatable
         'verified',
         'referral',
         'status',
+        'landlord_status',
         'profile_picture',
         'interest',
         'regDate',

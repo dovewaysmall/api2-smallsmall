@@ -27,6 +27,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
+                    'landlord_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -164,6 +165,7 @@ class LandlordController extends Controller
                 'verified' => 0,
                 'referral' => '',
                 'status' => 'active',
+                'landlord_status' => 'active',
                 'profile_picture' => '',
                 'interest' => '',
                 'regDate' => now(),
@@ -217,6 +219,7 @@ class LandlordController extends Controller
             'email' => 'sometimes|email|unique:user_tbl,email,' . $id . ',userID|max:255',
             'phone' => 'sometimes|string|max:20',
             'verified' => 'sometimes|boolean',
+            'landlord_status' => 'sometimes|in:active,inactive,pending,suspended',
         ]);
 
         if ($validator->fails()) {
@@ -230,7 +233,7 @@ class LandlordController extends Controller
         try {
             $updateData = $request->only([
                 'firstName', 'lastName', 'email', 'phone', 
-                'verified'
+                'verified', 'landlord_status'
             ]);
 
 
@@ -239,7 +242,7 @@ class LandlordController extends Controller
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'verified')
+                         'verified', 'landlord_status')
                 ->first();
 
             return response()->json([
@@ -342,7 +345,7 @@ class LandlordController extends Controller
                 ->where('user_type', 'landlord')
                 ->where('verified', 1)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 
-)
+                         'landlord_status')
                 ->orderBy('userID', 'desc')
                 ->get();
 
@@ -390,7 +393,7 @@ class LandlordController extends Controller
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'verified',
-)
+                         'landlord_status')
                 ->orderBy('userID', 'desc')
                 ->get();
 
@@ -533,6 +536,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
+                    'landlord_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -585,6 +589,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
+                    'landlord_status'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -610,6 +615,74 @@ class LandlordController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving landlords',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get landlords by landlord status.
+     */
+    public function getByLandlordStatus(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'landlord_status' => 'required|in:active,inactive,pending,suspended',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $landlordStatus = $request->input('landlord_status');
+            $landlords = DB::table('user_tbl')
+                ->where('user_type', 'landlord')
+                ->where('landlord_status', $landlordStatus)
+                ->select(
+                    'userID',
+                    'firstName', 
+                    'lastName',
+                    'email',
+                    'phone',
+                    'verified',
+                    'user_type',
+                    'landlord_status'
+                )
+                ->orderBy('userID', 'desc')
+                ->get();
+
+            $landlordsWithCounts = $landlords->map(function ($landlord) {
+                $propertyCount = DB::table('property_tbl')
+                    ->where('property_owner', $landlord->userID)
+                    ->count();
+                
+                $tenantCount = DB::table('bookings')
+                    ->join('property_tbl', 'bookings.propertyID', '=', 'property_tbl.propertyID')
+                    ->where('property_tbl.property_owner', $landlord->userID)
+                    ->distinct('bookings.userID')
+                    ->count('bookings.userID');
+                
+                $landlord->property_count = $propertyCount;
+                $landlord->tenant_count = $tenantCount;
+                return $landlord;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => "Landlords with status '{$landlordStatus}' retrieved successfully",
+                'data' => $landlordsWithCounts,
+                'count' => $landlordsWithCounts->count(),
+                'landlord_status' => $landlordStatus
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving landlords by status',
                 'error' => $e->getMessage()
             ], 500);
         }
