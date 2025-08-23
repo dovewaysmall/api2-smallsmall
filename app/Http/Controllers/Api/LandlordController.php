@@ -505,7 +505,7 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'boarding_status',
+                    'landlord_status',
                     'regDate'
                 )
                 ->orderBy('userID', 'desc')
