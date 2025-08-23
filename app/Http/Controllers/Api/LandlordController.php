@@ -27,7 +27,10 @@ class LandlordController extends Controller
                     'phone',
                     'verified',
                     'user_type',
-                    'landlord_status'
+                    'landlord_status',
+                    'landlord_bank',
+                    'landlord_acc_name',
+                    'landlord_acc_no'
                 )
                 ->orderBy('userID', 'desc')
                 ->get();
@@ -77,6 +80,7 @@ class LandlordController extends Controller
             $landlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->where('user_type', 'landlord')
+                ->select('*')
                 ->first();
 
             if (!$landlord) {
@@ -221,6 +225,9 @@ class LandlordController extends Controller
             'phone' => 'sometimes|string|max:20',
             'verified' => 'sometimes|boolean',
             'landlord_status' => 'sometimes|in:Not Yet Boarded,Onboarded,Offboarded',
+            'landlord_bank' => 'sometimes|string|max:255',
+            'landlord_acc_name' => 'sometimes|string|max:255',
+            'landlord_acc_no' => 'sometimes|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -240,6 +247,9 @@ class LandlordController extends Controller
             if ($request->has('phone')) $updateData['phone'] = $request->phone;
             if ($request->has('verified')) $updateData['verified'] = $request->verified;
             if ($request->has('landlord_status')) $updateData['landlord_status'] = $request->landlord_status;
+            if ($request->has('landlord_bank')) $updateData['landlord_bank'] = $request->landlord_bank;
+            if ($request->has('landlord_acc_name')) $updateData['landlord_acc_name'] = $request->landlord_acc_name;
+            if ($request->has('landlord_acc_no')) $updateData['landlord_acc_no'] = $request->landlord_acc_no;
 
             // Prevent empty update
             if (empty($updateData)) {
@@ -255,7 +265,7 @@ class LandlordController extends Controller
             $updatedLandlord = DB::table('user_tbl')
                 ->where('userID', $id)
                 ->select('userID', 'firstName', 'lastName', 'email', 'phone', 'user_type',
-                         'verified', 'landlord_status')
+                         'verified', 'landlord_status', 'landlord_bank', 'landlord_acc_name', 'landlord_acc_no')
                 ->first();
 
             return response()->json([
