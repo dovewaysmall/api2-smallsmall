@@ -13,7 +13,7 @@ class BookingController extends Controller
      */
     public function index()
     {
-        $bookings = DB::table('bookings')->get();
+        $bookings = DB::table('bookings')->orderBy('booking_date', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -221,6 +221,7 @@ class BookingController extends Controller
     {
         $bookings = DB::table('bookings')
             ->where('userID', $userID)
+            ->orderBy('booking_date', 'desc')
             ->get();
         
         if ($bookings->isEmpty()) {

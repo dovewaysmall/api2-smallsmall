@@ -81,6 +81,7 @@ class StaffController extends Controller
             $subordinates = DB::table('admin_tbl')
                 ->where('manager_id', $id)
                 ->select('adminID', 'firstName', 'lastName', 'email', 'role', 'department')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             return response()->json([
@@ -501,6 +502,7 @@ class StaffController extends Controller
             $statusStats = DB::table('admin_tbl')
                 ->select('status', DB::raw('count(*) as count'))
                 ->groupBy('status')
+                ->orderBy('status', 'desc')
                 ->get();
 
             $recentHires = DB::table('admin_tbl')
@@ -548,6 +550,7 @@ class StaffController extends Controller
                           ->distinct();
                 })
                 ->select('adminID', 'firstName', 'lastName', 'email', 'role', 'department')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             $hierarchy = [];
@@ -555,6 +558,7 @@ class StaffController extends Controller
                 $subordinates = DB::table('admin_tbl')
                     ->where('manager_id', $manager->adminID)
                     ->select('adminID', 'firstName', 'lastName', 'email', 'role', 'department', 'status')
+                    ->orderBy('firstName', 'desc')
                     ->get();
 
                 $hierarchy[] = [
@@ -684,6 +688,7 @@ class StaffController extends Controller
             $cxStaff = DB::table('admin_tbl')
                 ->where('staff_dept', 'cx')
                 ->where('status', 'active')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             $dashboard = [];
@@ -875,6 +880,7 @@ class StaffController extends Controller
             $tsrStaff = DB::table('admin_tbl')
                 ->where('staff_dept', 'tsr')
                 ->where('status', 'active')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             $dashboard = [];
@@ -968,6 +974,7 @@ class StaffController extends Controller
             $tsrStaff = DB::table('admin_tbl')
                 ->where('staff_dept', 'tsr')
                 ->where('status', 'active')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             $workloadData = [];
