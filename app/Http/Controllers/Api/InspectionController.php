@@ -20,7 +20,7 @@ class InspectionController extends Controller
             ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'staff_dept', 'status')
             ->where('staff_dept', 'tsr')
             ->where('status', 'active')
-            ->orderBy('firstName', 'asc')
+            ->orderBy('firstName', 'desc')
             ->get();
 
         // Mark the currently assigned TSR and separate others

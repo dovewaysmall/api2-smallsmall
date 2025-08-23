@@ -36,7 +36,7 @@ class AccountManagerController extends Controller
                           ->whereNotNull('account_manager')
                           ->distinct();
                 })
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             // Get client counts for each manager
@@ -110,7 +110,7 @@ class AccountManagerController extends Controller
                     'last_login'
                 )
                 ->where('account_manager', $id)
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             // Get client statistics
@@ -558,7 +558,7 @@ class AccountManagerController extends Controller
                       ->orWhere('lastName', 'LIKE', "%{$query}%")
                       ->orWhere('email', 'LIKE', "%{$query}%");
                 })
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             // Add client counts

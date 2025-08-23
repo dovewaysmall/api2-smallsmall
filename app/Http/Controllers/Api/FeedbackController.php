@@ -201,14 +201,14 @@ class FeedbackController extends Controller
         $ratingDistribution = DB::table('feedback')
             ->select('rate', DB::raw('count(*) as count'))
             ->groupBy('rate')
-            ->orderBy('rate')
+            ->orderBy('rate', 'desc')
             ->get();
 
         // Satisfaction distribution 
         $satisfactionDistribution = DB::table('feedback')
             ->select('satisfaction', DB::raw('count(*) as count'))
             ->groupBy('satisfaction')
-            ->orderBy('satisfaction')
+            ->orderBy('satisfaction', 'desc')
             ->get();
 
         // Recent feedback (last 30 days)

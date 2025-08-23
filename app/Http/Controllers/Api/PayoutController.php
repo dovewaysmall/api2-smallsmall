@@ -331,7 +331,7 @@ class PayoutController extends Controller
             $landlords = DB::table('user_tbl')
                 ->where('user_type', 'landlord')
                 ->select('userID', 'firstName', 'lastName', 'email')
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             return response()->json([

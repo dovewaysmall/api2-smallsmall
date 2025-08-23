@@ -344,7 +344,7 @@ class StaffController extends Controller
                     'manager.lastName as manager_lastName'
                 )
                 ->where('admin_tbl.role', $role)
-                ->orderBy('admin_tbl.firstName', 'asc')
+                ->orderBy('admin_tbl.firstName', 'desc')
                 ->get();
 
             return response()->json([
@@ -378,7 +378,7 @@ class StaffController extends Controller
                     'manager.lastName as manager_lastName'
                 )
                 ->where('admin_tbl.department', $department)
-                ->orderBy('admin_tbl.role', 'asc')
+                ->orderBy('admin_tbl.role', 'desc')
                 ->get();
 
             return response()->json([
@@ -408,7 +408,7 @@ class StaffController extends Controller
                 ->where('status', 'active')
                 ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'role', 
                          'department', 'profile_picture', 'date_hired')
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             return response()->json([
@@ -456,7 +456,7 @@ class StaffController extends Controller
                 })
                 ->select('adminID', 'firstName', 'lastName', 'email', 'phone', 'role',
                          'department', 'status', 'profile_picture', 'date_hired')
-                ->orderBy('firstName', 'asc')
+                ->orderBy('firstName', 'desc')
                 ->get();
 
             return response()->json([
@@ -641,7 +641,7 @@ class StaffController extends Controller
                     ]
                 ]);
             } else {
-                $cxStaff = $query->orderBy('admin_tbl.firstName', 'asc')->get();
+                $cxStaff = $query->orderBy('admin_tbl.firstName', 'desc')->get();
 
                 // Get CX department statistics
                 $cxStats = [
@@ -825,7 +825,7 @@ class StaffController extends Controller
                     ]
                 ]);
             } else {
-                $tsrStaff = $query->orderBy('admin_tbl.firstName', 'asc')->get();
+                $tsrStaff = $query->orderBy('admin_tbl.firstName', 'desc')->get();
 
                 // Get TSR department statistics
                 $tsrStats = [

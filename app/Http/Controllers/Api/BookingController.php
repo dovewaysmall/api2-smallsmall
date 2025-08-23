@@ -63,7 +63,7 @@ class BookingController extends Controller
             ->whereRaw('YEAR(bookings.next_rental) = ?', [$currentYear])
             ->whereNotNull('bookings.next_rental')
             ->where('bookings.rent_status', '!=', 'Terminated')
-            ->orderBy('bookings.next_rental', 'asc')
+            ->orderBy('bookings.next_rental', 'desc')
             ->get();
 
         if ($subscriptionsDue->isEmpty()) {
@@ -116,7 +116,7 @@ class BookingController extends Controller
             ->whereDate('bookings.next_rental', '<=', $twoWeeksFromNow)
             ->whereNotNull('bookings.next_rental')
             ->where('bookings.rent_status', '!=', 'Terminated')
-            ->orderBy('bookings.next_rental', 'asc')
+            ->orderBy('bookings.next_rental', 'desc')
             ->get();
 
         if ($subscriptionsDue->isEmpty()) {

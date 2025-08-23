@@ -197,7 +197,7 @@ class TenantController extends Controller
                     ]
                 ]);
             } else {
-                $tenantProfiles = $query->orderBy('user_tbl.firstName', 'asc')->get();
+                $tenantProfiles = $query->orderBy('user_tbl.firstName', 'desc')->get();
 
                 return response()->json([
                     'success' => true,
@@ -496,7 +496,7 @@ class TenantController extends Controller
                       ->orWhere('user_tbl.phone', 'LIKE', "%{$query}%");
                 })
                 ->distinct()
-                ->orderBy('user_tbl.firstName', 'asc')
+                ->orderBy('user_tbl.firstName', 'desc')
                 ->get();
 
             return response()->json([
@@ -632,7 +632,7 @@ class TenantController extends Controller
                 )
                 ->where('bookings.rent_status', 'active')
                 ->whereBetween('bookings.rent_expiration', [now(), now()->addDays($days)])
-                ->orderBy('bookings.rent_expiration', 'asc')
+                ->orderBy('bookings.rent_expiration', 'desc')
                 ->get();
 
             return response()->json([
