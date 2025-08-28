@@ -207,6 +207,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions/this-year', [TransactionController::class, 'getThisYear']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::put('/transactions/{id}', [TransactionController::class, 'update']);
+    Route::delete('/transactions/{id}', [TransactionController::class, 'destroy']);
     
     Route::get('/verifications', [VerificationController::class, 'index']);
     Route::post('/verifications', [VerificationController::class, 'store']);

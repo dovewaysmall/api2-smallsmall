@@ -731,4 +731,58 @@ class TransactionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete a transaction by ID.
+     */
+    public function destroy(string $id)
+    {
+        try {
+            // Check if transaction exists first
+            $transaction = DB::table('transaction_tbl')
+                ->where('id', $id)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction not found'
+                ], 404);
+            }
+
+            // Store transaction data for response
+            $deletedTransaction = [
+                'id' => $transaction->id,
+                'amount' => $transaction->amount,
+                'transaction_date' => $transaction->transaction_date,
+                'type' => $transaction->type,
+                'status' => $transaction->status
+            ];
+
+            // Delete the transaction
+            $deleted = DB::table('transaction_tbl')
+                ->where('id', $id)
+                ->delete();
+
+            if ($deleted) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Transaction deleted successfully',
+                    'data' => $deletedTransaction
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete transaction'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the transaction',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
