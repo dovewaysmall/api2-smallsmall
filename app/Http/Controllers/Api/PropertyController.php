@@ -114,6 +114,7 @@ class PropertyController extends Controller
             'furnishing' => 'nullable|string|in:furnished,unfurnished,semi-furnished',
             'paymentPlan' => 'nullable|string|max:20',
             'frequency' => 'nullable|string|in:monthly,quarterly,bi-annually,annually',
+            'intervals' => 'nullable|string|max:500',
             'amenities' => 'nullable|string|max:1000',
             'services' => 'nullable|string|max:1000',
             'available_date' => 'nullable|date|after_or_equal:today',
@@ -152,23 +153,28 @@ class PropertyController extends Controller
 
             // Prepare data for insertion
             $data = [
+                'id' => mt_rand(100000, 999999999),
                 'propertyTitle' => $request->propertyTitle,
                 'propertyID' => mt_rand(1000000, 99999999999),
                 'propertyDescription' => $request->propertyDescription,
-                'rentalCondition' => $request->rentalCondition,
+                'rentalCondition' => $request->rentalCondition ?? 'Standard terms',
                 'furnishing' => $request->furnishing ?? 'unfurnished',
                 'price' => $request->price,
-                'serviceCharge' => $request->serviceCharge ?? 0,
-                'securityDeposit' => $request->securityDeposit ?? 0,
-                'securityDepositTerm' => $request->securityDepositTerm,
+                'serviceCharge' => $request->serviceCharge ?? '0',
+                'serviceChargeTerm' => $request->serviceChargeTerm ?? '1',
+                'securityDeposit' => $request->securityDeposit ?? '0',
+                'securityDepositTerm' => $request->securityDepositTerm ?? 1,
                 'verification' => $request->verification ?? 'pending',
                 'propertyType' => $request->propertyType,
                 'renting_as' => $request->renting_as ?? 'landlord',
-                'paymentPlan' => $request->paymentPlan,
+                'paymentPlan' => $request->paymentPlan ?? 'flexible',
                 'frequency' => $request->frequency ?? 'monthly',
-                'intervals' => $request->intervals,
-                'amenities' => $request->amenities,
-                'services' => $request->services,
+                'intervals' => $request->intervals ?? 'a:1:{i:0;s:7:"Monthly";}',
+                'amenities' => $request->amenities ?? '',
+                'services' => $request->services ?? '',
+                'zip' => $request->zip ?? '',
+                'imageFolder' => $imageFolder ?? '',
+                'featuredImg' => $featuredImg ?? '',
                 'bed' => $request->bed,
                 'bath' => $request->bath,
                 'toilet' => $request->toilet,
@@ -176,33 +182,30 @@ class PropertyController extends Controller
                 'city' => $request->city,
                 'state' => $request->state,
                 'country' => $request->country,
-                'zip' => $request->zip,
                 'poster' => $request->poster,
                 'property_owner' => $request->property_owner,
                 'status' => 'available',
-                'imageFolder' => $imageFolder,
-                'featuredImg' => $featuredImg,
-                'views' => 0,
+                'views' => '0',
                 'featured_property' => $request->featured_property ?? 0,
                 'available_date' => $request->available_date ?? now()->toDateString(),
                 'dateOfEntry' => now(),
             ];
 
-            // Insert property and get ID
-            $propertyId = DB::table('property_tbl')->insertGetId($data);
+            // Insert property
+            $inserted = DB::table('property_tbl')->insert($data);
 
-            if ($propertyId) {
-                // Retrieve the created property with landlord details
+            if ($inserted) {
+                // Retrieve the created property
                 $createdProperty = DB::table('property_tbl')
                         ->select('property_tbl.*')
-                    ->where('property_tbl.id', $propertyId)
+                    ->where('property_tbl.id', $data['id'])
                     ->first();
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Property created successfully',
                     'data' => $createdProperty,
-                    'id' => $propertyId
+                    'id' => $data['id']
                 ], 201);
             } else {
                 return response()->json([
