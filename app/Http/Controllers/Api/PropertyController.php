@@ -112,7 +112,7 @@ class PropertyController extends Controller
             'property_owner' => 'nullable|string|max:255',
             'renting_as' => 'nullable|string|in:landlord,agent',
             'furnishing' => 'nullable|string|in:furnished,unfurnished,semi-furnished',
-            'paymentPlan' => 'nullable|string|max:100',
+            'paymentPlan' => 'nullable|string|max:20',
             'frequency' => 'nullable|string|in:monthly,quarterly,bi-annually,annually',
             'amenities' => 'nullable|string|max:1000',
             'services' => 'nullable|string|max:1000',
@@ -253,6 +253,7 @@ class PropertyController extends Controller
             'featured_property' => 'nullable|boolean',
             'available_date' => 'nullable|date',
             'property_owner' => 'nullable|string|max:255',
+            'paymentPlan' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -269,7 +270,7 @@ class PropertyController extends Controller
                 'serviceCharge', 'securityDeposit', 'bed', 'bath', 'toilet',
                 'address', 'city', 'state', 'status', 'furnishing', 
                 'featured_property', 'available_date', 'amenities', 'services',
-                'property_owner'
+                'property_owner', 'paymentPlan'
             ]);
 
             DB::table('property_tbl')->where('id', $id)->update($updateData);
